@@ -1,0 +1,20 @@
+Problémy vyřešené:
+    1. Vkládání obrázků - pillow
+    2. Button onclick - lambda
+    3. Porovnávání obrázků v poli - ukládány "pyimage[n]" - string seznam pyimage1,2,3,...
+    4. Nejdriv byla policka cislovana celymi cislo (0 - 63), ted maji kazda svoji souradnici [x,y] (tuple)
+    5. 
+
+
+self.images_white = ["pyimage1", "pyimage3", "pyimage4", "pyimage5", "pyimage6", "pyimage7"]
+self.images_black = ["pyimage8", "pyimage10", "pyimage11", "pyimage12", "pyimage13", "pyimage14"]
+self.images_blank = ["pyimages2", "pyimages9"]
+
++- 7
+1 - b
+2 - blank
+3 - k
+4 - n
+5 - p
+6 - q
+7 - r
