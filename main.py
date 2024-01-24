@@ -114,6 +114,35 @@ class Board(tk.Frame):
         return
     
     def moveBishop(self, pos):
+        if (abs(self.first_pos[0] - pos[0]) != abs(self.first_pos[1] - pos[1])): #Kontrola rozdílu v pozicích
+            return False
+        y = self.first_pos[1]
+        if pos[0] > self.first_pos[0]: #   x-->
+            if pos[1] > self.first_pos[1]: #y ↑
+                for x in range(self.first_pos[0] + 1, pos[0]):
+                    y += 1
+                    if (self.squares[(x, y)]["image"] != "pyimage9"):
+                        print("V cestě je figurka: " + str(x) + " , " + str(y))
+                        return False
+            if pos[1] < self.first_pos[1]: #y ↓
+                for x in range(self.first_pos[0] + 1, pos[0]):
+                    y -= 1
+                    if (self.squares[(x, y)]["image"] != "pyimage9"):
+                        print("V cestě je figurka: " + str(x) + " , " + str(y))
+                        return False
+        if pos[0] < self.first_pos[0]: #<--x
+            if pos[1] > self.first_pos[1]: #y ↑
+                for x in range(self.first_pos[0] - 1, pos[0], -1):
+                    y += 1
+                    if (self.squares[(x, y)]["image"] != "pyimage9"):
+                        print("V cestě je figurka: " + str(x) + " , " + str(y))
+                        return False
+            if pos[1] < self.first_pos[1]: #y ↓
+                for x in range(self.first_pos[0] - 1, pos[0], -1):
+                    y -= 1
+                    if (self.squares[(x, y)]["image"] != "pyimage9"):
+                        print("V cestě je figurka: " + str(x) + " , " + str(y))
+                        return False
         return True
 
     def moveKing(self, pos):
@@ -177,7 +206,8 @@ class Board(tk.Frame):
             return self.movePawn(pos)
         elif (current_piece == wq or current_piece == bq):
             print("Queen")
-            return self.moveQueen(pos)
+            if (self.moveRook(pos) or self.moveBishop(pos)):
+                return True
         elif (current_piece == wr or current_piece == br):
             print("Rook")
             return self.moveRook(pos)
