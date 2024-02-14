@@ -18,3 +18,16 @@ self.images_blank = ["pyimages2", "pyimages9"]
 5 - p
 6 - q
 7 - r
+
+TODO:
+king in check
+pawn promotion
+castling
+en passant
+
+
+???
+self.squares[self.second_pos].config(image = self.first_button["image"])
+self.squares[self.second_pos].image = self.first_button["image"]
+self.squares[self.first_pos].config(image = self.pieces_black["blank"])
+self.squares[self.first_pos].image = self.pieces_black["blank"]
