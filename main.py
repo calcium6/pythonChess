@@ -1,6 +1,7 @@
 import os
 import tkinter as tk
 from PIL import Image, ImageTk
+import PIL
 
 class Board(tk.Frame):
     def __init__(self, root):
@@ -14,15 +15,15 @@ class Board(tk.Frame):
         #self.images_blank = ["pyimages2", "pyimages9"]
         self.blank = None
 
-        self.white_king_pos = (0, 4)
-        self.position_white = [(0,0), (0,1), (0,2), (0,3), (0,4), (0,5), (0,6), (0,7), (1,0), (1,1), (1,2), (1,3), (1,4), (1,5), (1,6), (1,7)]
-        self.position_white = [(i,j) for j in range(8) for i in range(0,2)]
-        self.black_king_pos = (7, 4)
-        self.position_black = [(7,0), (7,1), (7,2), (7,3), (7,4), (7,5), (7,6), (7,7), (6,0), (6,1), (6,2), (6,3), (6,4), (6,5), (6,6), (6,7)]
+        self.white_king_pos = (4,0)
+        self.position_white = [(0,0), (1,0), (2,0), (3,0), (4,0), (5,0), (6,0), (7,0), (0,1), (1,1), (2,1), (3,1), (4,1), (5,1), (6,1), (7,1)]
+        #???self.position_white = [(i,j) for j in range(8) for i in range(0,2)]
+        self.black_king_pos = (4,7)
+        self.position_black = [(0,7), (1,7), (2,7), (3,7), (4,7), (5,7), (6,7), (7,7), (0,6), (1,6), (2,6), (3,6), (4,6), (5,6), (6,6), (7,6)]
         self.king_moved = False
 
-        self.first_pos = (0, 0)
-        self.second_pos = (0, 0)
+        self.first_pos = None
+        self.second_pos = None
         self.first_button = None
         self.second_button = None
         self.button_clicks = 0
@@ -37,11 +38,11 @@ class Board(tk.Frame):
         for row in range(8):
             for col in range(8):
                 if (col+row)%2 == 0:
-                    square = tk.Button(self, bg="#eeeed2", activebackground="#baca44", borderwidth=0, text = str(7-row) + str(col))
+                    square = tk.Button(self, bg="#eeeed2", activebackground="#baca44", borderwidth=0, text = str(col) + str(7-row))
                 else:
-                    square = tk.Button(self, bg="#769656", activebackground="#baca44", borderwidth=0, text = str(7-row) + str(col))
+                    square = tk.Button(self, bg="#769656", activebackground="#baca44", borderwidth=0, text = str(col) + str(7-row))
                 square.grid(row=row, column=col)
-                pos = (7-row, col)
+                pos = (col, 7-row)
                 self.squares.setdefault(pos, square)
                 self.squares[pos].config(command = lambda arg = pos: self.select(arg))
 
@@ -63,28 +64,23 @@ class Board(tk.Frame):
             self.pieces_black.setdefault(os.path.splitext(imgPath)[0], piece)
 
     def place_pieces(self):
-        start_position = {(0,0):"r", (0,1):"n", (0,2):"b", (0,3):"q", (0,4):"k", (0,5):"b", (0,6):"n", (0,7):"r"}
+        start_position = {(0,0):"r", (1,0):"n", (2,0):"b", (3,0):"q", (4,0):"k", (5,0):"b", (6,0):"n", (7,0):"r"}
         for square in start_position:
 
-            #self.squares[(square[0]+7, square[1])].config(image = self.pieces_black[start_position[square]])
-            self.squares[(square[0]+7, square[1])].image = self.pieces_black[start_position[square]]
-            self.squares[(square[0]+7, square[1])]["image"] = self.pieces_black[start_position[square]]
+            self.squares[(square[0], square[1]+7)].image = self.pieces_black[start_position[square]]
+            self.squares[(square[0], square[1]+7)]["image"] = self.pieces_black[start_position[square]]
             
-            #self.squares[square].config(image = self.pieces_white[start_position[square]])
             self.squares[square].image = self.pieces_white[start_position[square]]
             self.squares[square]["image"] = self.pieces_white[start_position[square]]
         
         for i in range(0, 8):
-            #self.squares[(6,i)].config(image = self.pieces_black["p"])
-            self.squares[(6,i)].image = self.pieces_black["p"]
-            self.squares[(6,i)]["image"] = self.pieces_black["p"]
-            #self.squares[(1,i)].config(image = self.pieces_white["p"])
-            self.squares[(1,i)].image = self.pieces_white["p"]
-            self.squares[(1,i)]["image"] = self.pieces_white["p"]
+            self.squares[(i,6)].image = self.pieces_black["p"]
+            self.squares[(i,6)]["image"] = self.pieces_black["p"]
+            self.squares[(i,1)].image = self.pieces_white["p"]
+            self.squares[(i,1)]["image"] = self.pieces_white["p"]
             for j in range(2, 6):
-                #self.squares[(j,i)].config(image = self.pieces_black["blank"])
-                self.squares[(j,i)].image = self.pieces_black["blank"]
-                self.squares[(j,i)]["image"] = self.pieces_black["blank"]
+                self.squares[(i,j)].image = self.pieces_black["blank"]
+                self.squares[(i,j)]["image"] = self.pieces_black["blank"]
         
         for key in self.pieces_white:
             if key == "blank":
@@ -105,6 +101,7 @@ class Board(tk.Frame):
 
     def select(self, pos: tuple):
         print(pos)
+        print(str(self.squares[pos].image))
         if self.button_clicks % 2 == 0:
             print("turns: " + str(self.turns))
             if (self.squares[pos].image in self.white) and self.turns % 2 == 0:
@@ -125,7 +122,7 @@ class Board(tk.Frame):
             self.base_color(pos)
             self.button_clicks += 1
             return
-        if (self.checkLegality(pos)):
+        if (self.check_move_legality(self.first_pos, pos)):
             #print("Pohyb z " + str(self.first_pos) + " na " + str(pos)) 
             self.second_pos = pos
             self.second_button = self.squares[pos]
@@ -139,7 +136,7 @@ class Board(tk.Frame):
             #print("white king: " + str(self.white_king_pos))
             #print("black king: " + str(self.black_king_pos))
             if self.turns % 2 == 0: #kontrola sachu pro hrace momentalne na rade
-                check = self.king_check(self.white_king_pos, True) #check, =
+                check, _ = self.check_piece_threats(self.white_king_pos, True)
                 if check:
                     self.second_button.image = second_image
                     self.second_button["image"] = str(second_image)
@@ -155,11 +152,11 @@ class Board(tk.Frame):
                     self.button_clicks += 1
                     return
                 self.position_white[self.find_white_piece_index(self.first_pos)] = self.second_pos
-                opponent_check = self.king_check(self.black_king_pos, False)
+                opponent_check, check_pos = self.check_piece_threats(self.black_king_pos, False)
                 if opponent_check:
                     pass
             else:
-                check = self.king_check(self.black_king_pos, False)
+                check, _ = self.check_piece_threats(self.black_king_pos, False)
                 if check:
                     self.second_button.image = second_image
                     self.second_button["image"] = str(second_image)
@@ -175,7 +172,7 @@ class Board(tk.Frame):
                     self.button_clicks += 1
                     return
                 self.position_black[self.find_black_piece_index(self.first_pos)] = self.second_pos
-                opponent_check = self.king_check(self.white_king_pos, True)
+                opponent_check, check_pos = self.check_piece_threats(self.white_king_pos, True)
                 if opponent_check:
                     pass
 
@@ -186,16 +183,6 @@ class Board(tk.Frame):
             if self.king_moved:
                 self.king_moved = False
             return
-            if self.turns % 2 == 0: #kontrola sachu pro protihrace (kontrola konce hry)
-                opponent_check = self.king_check(self.black_king_pos, False)
-                if opponent_check:
-                    for i in range(0, 8):
-                        for j in range(0, 8):
-                            pass
-            else:
-                opponent_check = self.king_check(self.white_king_pos, True)
-                if opponent_check:
-                    pass
         else:
             print("Zadny pohyb :((")
             self.base_color(self.first_pos)
@@ -203,167 +190,187 @@ class Board(tk.Frame):
             self.button_clicks += 1
         return
     
-    def find_white_piece_index(self, pos):
+    def try_for_check(self, first_pos: tuple[int, int], second_pos: tuple[int, int], color: bool) -> bool:
+        try:
+            if self.check_move_legality(first_pos, second_pos):
+                first_piece = self.squares[first_pos].image
+                second_piece = self.squares[second_pos].image
+                self.squares[first_pos].image = self.blank
+                self.squares[second_pos].image = first_piece
+                threatened = self.check_piece_threats(second_pos, color)
+                self.squares[first_pos].image = first_piece
+                self.squares[second_pos].image = second_piece
+                if threatened:
+                    return False
+                return True
+        except KeyError:
+            return False
+        
+    
+    def try_move_king(self, color: bool) -> bool:
+        if color:
+            king = self.white_king_pos
+        else:
+            king = self.black_king_pos
+        moves = [(king[0], king[1])]
+        
+    
+    def find_white_piece_index(self, pos: tuple[int, int]) -> int:
         for index, position in enumerate(self.position_white):
             if position == pos:
                 return index
         print("????????")
 
-    def find_black_piece_index(self, pos):
+    def find_black_piece_index(self, pos: tuple[int, int]) -> int:
         for index, position in enumerate(self.position_black):
             if position == pos:
                 return index
         print("????????")
     
-    def moveBishop(self, pos: tuple):
-        if (abs(self.first_pos[0] - pos[0]) != abs(self.first_pos[1] - pos[1])): #Kontrola rozdílu v pozicích
+    def move_bishop(self, first_pos: tuple[int, int], second_pos: tuple[int, int]) -> bool:
+        if (abs(first_pos[0] - second_pos[0]) != abs(first_pos[1] - second_pos[1])): #Kontrola rozdílu v pozicích
             return False
-        y = self.first_pos[1]
-        if pos[0] > self.first_pos[0]: #   x ->
-            if pos[1] > self.first_pos[1]: #y ↑
-                for x in range(self.first_pos[0] + 1, pos[0]):
+        y = first_pos[1]
+        if second_pos[0] > first_pos[0]: #   x ->
+            if second_pos[1] > first_pos[1]: #y ↑
+                for x in range(first_pos[0] + 1, second_pos[0]):
                     y += 1
                     if (self.squares[(x, y)].image != self.blank):
                         print("V cestě je figurka: " + str(x) + " , " + str(y))
                         return False
-            if pos[1] < self.first_pos[1]: #y ↓
-                for x in range(self.first_pos[0] + 1, pos[0]):
+            if second_pos[1] < first_pos[1]: #y ↓
+                for x in range(first_pos[0] + 1, second_pos[0]):
                     y -= 1
                     if (self.squares[(x, y)].image != self.blank):
                         print("V cestě je figurka: " + str(x) + " , " + str(y))
                         return False
-        if pos[0] < self.first_pos[0]: #x <-
-            if pos[1] > self.first_pos[1]: #y ↑
-                for x in range(self.first_pos[0] - 1, pos[0], -1):
+        if second_pos[0] < first_pos[0]: #x <-
+            if second_pos[1] > first_pos[1]: #y ↑
+                for x in range(first_pos[0] - 1, second_pos[0], -1):
                     y += 1
                     if (self.squares[(x, y)].image != self.blank):
                         print("V cestě je figurka: " + str(x) + " , " + str(y))
                         return False
-            if pos[1] < self.first_pos[1]: #y ↓
-                for x in range(self.first_pos[0] - 1, pos[0], -1):
+            if second_pos[0] < first_pos[0]: #y ↓
+                for x in range(first_pos[0] - 1, second_pos[0], -1):
                     y -= 1
                     if (self.squares[(x, y)].image != self.blank):
                         print("V cestě je figurka: " + str(x) + " , " + str(y))
                         return False
         return True
 
-    def moveKing(self, pos: tuple):
-        if abs(self.first_pos[0] - pos[0]) <= 1 and abs(self.first_pos[1] - pos[1]) <= 1:
-            if not self.king_nearby(pos, (self.turns % 2 == 0)):
+    def move_king(self, first_pos: tuple[int, int], second_pos: tuple[int, int]) -> bool:
+        if abs(first_pos[0] - second_pos[0]) <= 1 and abs(first_pos[1] - second_pos[1]) <= 1:
+            if not self.king_nearby(second_pos, (self.turns % 2 == 0)):
                 if self.turns % 2 == 0:
-                    self.white_king_pos = pos
+                    self.white_king_pos = second_pos
                 else:
-                    self.black_king_pos = pos
+                    self.black_king_pos = second_pos
                 self.king_moved = True
                 return True
         return False
 
-    def moveKnight(self, pos: tuple):
-        if abs(self.first_pos[0] - pos[0]) == 2 and abs(self.first_pos[1] - pos[1]) == 1:
+    def move_knight(self, first_pos: tuple[int, int], second_pos: tuple[int, int]) -> bool:
+        if abs(first_pos[1] - second_pos[1]) == 2 and abs(first_pos[0] - second_pos[0]) == 1:
             return True
-        if abs(self.first_pos[0] - pos[0]) == 1 and abs(self.first_pos[1] - pos[1]) == 2:
+        if abs(first_pos[1] - second_pos[1]) == 1 and abs(first_pos[0] - second_pos[0]) == 2:
             return True
         return False
     
-    def movePawn(self, pos: tuple):
+    def move_pawn(self, first_pos: tuple[int, int], second_pos: tuple[int, int]) -> bool:
         selected_piece = self.first_button.image
-        if self.first_pos[0] == 1: #První pohyb pro bílou
-            if pos[0] - self.first_pos[0] == 2 and pos[1] == self.first_pos[1]:
-                if self.squares[(2, pos[1])].image != self.blank and self.squares[(3, pos[1])].image != self.blank:
+        if first_pos[1] == 1: #První pohyb pro bílou
+            if second_pos[1] - first_pos[1] == 2 and second_pos[0] == first_pos[0]:
+                if self.squares[(second_pos[0], 2)].image != self.blank and self.squares[(second_pos[0], 3)].image != self.blank:
                     return False
                 return True
-        if self.first_pos[0] == 6: #První pohyb pro černou
-            if pos[0] - self.first_pos[0] == -2 and pos[1] == self.first_pos[1]:
-                if self.squares[(5, pos[1])].image != self.blank and self.squares[(4, pos[1])].image != self.blank:
+        if first_pos[1] == 6: #První pohyb pro černou
+            if second_pos[1] - first_pos[1] == -2 and second_pos[0] == first_pos[0]:
+                if self.squares[(second_pos[0], 5)].image != self.blank and self.squares[(second_pos[0], 4)].image != self.blank:
                     return False
                 return True
         if selected_piece in self.white:
-            if pos[0] - self.first_pos[0] == 1:
-                if pos[1] == self.first_pos[1]:
-                    if self.squares[pos].image != self.blank:
+            if second_pos[1] - first_pos[1] == 1:
+                if second_pos[0] == first_pos[0]:
+                    if self.squares[second_pos].image != self.blank:
                         return False
                     return True
-                if abs(pos[1] - self.first_pos[1]) == 1:
-                    if self.squares[pos].image == self.blank:
+                if abs(second_pos[0] - first_pos[0]) == 1:
+                    if self.squares[second_pos].image == self.blank:
                         return False
                     return True
         if selected_piece in self.black:
-            if pos[0] - self.first_pos[0] == -1:
-                if pos[1] == self.first_pos[1]:
-                    if self.squares[pos].image != self.blank:
+            if second_pos[1] - first_pos[1] == -1:
+                if second_pos[0] == first_pos[0]:
+                    if self.squares[second_pos].image != self.blank:
                         return False
                     return True
-                if abs(pos[1] - self.first_pos[1]) == 1:
-                    if self.squares[pos].image == self.blank:
+                if abs(second_pos[0] - first_pos[0]) == 1:
+                    if self.squares[second_pos].image == self.blank:
                         return False
                     return True
 
-    def moveQueen(self, pos: tuple):
-        if self.moveRook(pos) or self.moveBishop(pos):
-            return True
-        return False
-
-    def moveRook(self, pos: tuple):
-        if self.first_pos[0] == pos[0]:
-            pos1, pos2 = min(self.first_pos[1], pos[1]), max(self.first_pos[1], pos[1])
+    def move_rook(self, first_pos: tuple[int, int], second_pos: tuple[int, int]) -> bool:
+        if first_pos[1] == second_pos[1]:
+            pos1, pos2 = min(first_pos[0], second_pos[0]), max(first_pos[0], second_pos[0])
             print("R - Horizontal move")
             for i in range(pos1+1, pos2):
-                print(self.squares[(self.first_pos[0], i)].image)
-                if self.squares[(self.first_pos[0], i)].image != self.blank:
-                    print(str(self.first_pos[0]) + " , " + str(i))
+                print(self.squares[(i, first_pos[1])].image)
+                if self.squares[(i, first_pos[1])].image != self.blank:
+                    print(str(first_pos[1]) + " , " + str(i))
                     print("V cestě je figurka")
                     return False
             return True
-        if self.first_pos[1] == pos[1]:
+        if first_pos[0] == second_pos[0]:
             print("R - Vertical move")
-            pos1, pos2 = min(self.first_pos[0], pos[0]), max(self.first_pos[0], pos[0])
+            pos1, pos2 = min(first_pos[1], second_pos[1]), max(first_pos[1], second_pos[1])
             print(str(pos1) + " , " + str(pos2))
             for i in range(pos1+1, pos2):
-                print(self.squares[(i, self.first_pos[1])].image)
-                if self.squares[(i, self.first_pos[1])].image != self.blank:
-                    print(str(i) + " , " + str(self.first_pos[1]))
+                print(self.squares[(first_pos[0], i)].image)
+                if self.squares[(first_pos[0], i)].image != self.blank:
+                    print(str(i) + " , " + str(first_pos[0]))
                     print("V cestě je figurka")
                     return False
             return True
         print("Diagonal")
         return False
 
-    def checkLegality(self, pos: tuple):
-        piece = self.squares[pos].image
-        current_piece = self.first_button.image
-        print(piece)
-        if (self.turns % 2 == 0 and piece in self.white):
+    def check_move_legality(self, first_pos: tuple[int, int], second_pos: tuple[int, int]) -> bool:
+        selected_piece = self.squares[first_pos].image
+        destination = self.squares[second_pos].image
+        print(destination)
+        if (self.turns % 2 == 0 and destination in self.white):
             return False
-        elif (self.turns % 2 == 1 and piece in self.black):
+        elif (self.turns % 2 == 1 and destination in self.black):
             return False
-        if (current_piece == self.pieces_white["b"] or current_piece == self.pieces_black["b"]):
+        if (selected_piece == self.pieces_white["b"] or selected_piece == self.pieces_black["b"]):
             print("Bishop")
-            return self.moveBishop(pos)
-        elif (current_piece == self.pieces_white["k"] or current_piece == self.pieces_black["k"]):
+            return self.move_bishop(first_pos, second_pos)
+        elif (selected_piece == self.pieces_white["k"] or selected_piece == self.pieces_black["k"]):
             print("King")
-            return self.moveKing(pos)
-        elif (current_piece == self.pieces_white["n"] or current_piece == self.pieces_black["n"]):
+            return self.move_king(first_pos, second_pos)
+        elif (selected_piece == self.pieces_white["n"] or selected_piece == self.pieces_black["n"]):
             print("Knight")
-            return self.moveKnight(pos)
-        elif (current_piece == self.pieces_white["p"] or current_piece == self.pieces_black["p"]):
+            return self.move_knight(first_pos, second_pos)
+        elif (selected_piece == self.pieces_white["p"] or selected_piece == self.pieces_black["p"]):
             print("Pawn")
-            return self.movePawn(pos)
-        elif (current_piece == self.pieces_white["q"] or current_piece == self.pieces_black["q"]):
+            return self.move_pawn(first_pos, second_pos)
+        elif (selected_piece == self.pieces_white["q"] or selected_piece == self.pieces_black["q"]):
             print("Queen")
-            return (self.moveRook(pos) or self.moveBishop(pos))
-        elif (current_piece == self.pieces_white["r"] or current_piece == self.pieces_black["r"]):
+            return (self.move_rook(first_pos, second_pos) or self.move_bishop(first_pos, second_pos))
+        elif (selected_piece == self.pieces_white["r"] or selected_piece == self.pieces_black["r"]):
             print("Rook")
-            return self.moveRook(pos)
+            return self.move_rook(first_pos, second_pos)
         return False
         
-    def base_color(self, pos: tuple):
+    def base_color(self, pos: tuple[int, int]):
         if ((pos[0] + pos[1]) % 2 == 1):
             self.squares[pos].config(bg = "#eeeed2")
             return
         self.squares[pos].config(bg = "#769656")
         return
     
-    def king_nearby(self, king_pos: tuple, king_color: bool):
+    def king_nearby(self, king_pos: tuple[int, int], king_color: bool) -> bool:
         if king_color:
             opponent_king = self.pieces_black["k"]
         else:
@@ -372,25 +379,46 @@ class Board(tk.Frame):
         try:
             if self.squares[(x, y + 1)].image == opponent_king:
                 return True
+        except KeyError:
+            pass
+        try:
             if self.squares[(x + 1, y + 1)].image == opponent_king:
                 return True
+        except KeyError:
+            pass
+        try:
             if self.squares[(x + 1, y)].image == opponent_king:
                 return True
+        except KeyError:
+            pass
+        try:
             if self.squares[(x + 1, y - 1)].image == opponent_king:
                 return True
+        except KeyError:
+            pass
+        try:
             if self.squares[(x, y - 1)].image == opponent_king:
                 return True
+        except KeyError:
+            pass
+        try:
             if self.squares[(x - 1, y - 1)].image == opponent_king:
                 return True
+        except KeyError:
+            pass
+        try:
             if self.squares[(x - 1, y)].image == opponent_king:
                 return True
+        except KeyError:
+            pass
+        try:
             if self.squares[(x - 1, y + 1)].image == opponent_king:
                 return True
         except KeyError:
             pass
         return False
     
-    def piece_found(self, king_color: bool, piece, check_black: list, check_white: list): #todo piece datatype
+    def piece_found(self, king_color: bool, piece: 'PIL.ImageTk.PhotoImage', check_black: list, check_white: list) -> bool:
         if king_color == False: #black king
             if piece in self.black:
                 if piece != self.pieces_black["k"]:
@@ -409,7 +437,7 @@ class Board(tk.Frame):
             if piece in self.white:
                 return False
 
-    def check_bishop_queen(self, king_pos: tuple, king_color: bool):
+    def check_bishop_queen(self, king_pos: tuple[int, int], king_color: bool) -> tuple[bool, tuple[int, int]]:
         x1, x2 = king_pos[0], king_pos[0]
         y11, y12, y21, y22 = king_pos[1], king_pos[1], king_pos[1], king_pos[1]
         for i in range(0, 8):
@@ -417,35 +445,35 @@ class Board(tk.Frame):
             y11 += 1
             y21 += 1
             x2 -= 1
-            y12 -= 1 
+            y12 -= 1
             y22 -= 1
             if x1 > 7 and x2 < 0:
-                return False
+                return False, None
             if x1 <= 7:
                 if y11 <= 7:
                     if self.squares[(x1, y11)].image != self.blank:
                         if self.piece_found(king_color, self.squares[(x1, y11)].image, [self.pieces_white["b"], self.pieces_white["q"]], [self.pieces_black["b"], self.pieces_black["q"]]):
-                            return True#, (x1, y11)
+                            return True, (x1, y11)
                         y11 = 8
                 if y12 >= 0:
                     if self.squares[(x1, y12)].image != self.blank:
                         if self.piece_found(king_color, self.squares[(x1, y12)].image, [self.pieces_white["b"], self.pieces_white["q"]], [self.pieces_black["b"], self.pieces_black["q"]]):
-                            return True#, (x1, y12)
+                            return True, (x1, y12)
                         y12 = -1
             if x2 >= 0:
                 if y21 <= 7:
                     if self.squares[(x2, y21)].image != self.blank:
                         if self.piece_found(king_color, self.squares[(x2, y21)].image, [self.pieces_white["b"], self.pieces_white["q"]], [self.pieces_black["b"], self.pieces_black["q"]]):
-                            return True#, (x2, y21)
+                            return True, (x2, y21)
                         y21 = 8
                 if y22 >= 0:
                     if self.squares[(x2, y22)].image != self.blank:
                         if self.piece_found(king_color, self.squares[(x2, y22)].image, [self.pieces_white["b"], self.pieces_white["q"]], [self.pieces_black["b"], self.pieces_black["q"]]):
-                            return True#, (x2, y22)
+                            return True, (x2, y22)
                         y22 = -1
-        return False
+        return False, None
     
-    def check_rook_queen(self, king_pos: tuple, king_color: bool):
+    def check_rook_queen(self, king_pos: tuple[int, int], king_color: bool) -> tuple[bool, tuple[int, int]]:
         x1, x2 = king_pos[0], king_pos[0]
         y1, y2 = king_pos[1], king_pos[1]
         for i in range(0, 8):
@@ -456,26 +484,26 @@ class Board(tk.Frame):
             if x1 <= 7:
                 if self.squares[(x1, king_pos[1])].image != self.blank:
                     if self.piece_found(king_color, self.squares[(x1, king_pos[1])].image, [self.pieces_white["q"], self.pieces_white["r"]], [self.pieces_black["q"], self.pieces_black["r"]]):
-                        return True#, (x1, king_pos[1])
+                        return True, (x1, king_pos[1])
                     x1 = 8
             if y1 <= 7:
                 if self.squares[(king_pos[0], y1)].image != self.blank:
                     if self.piece_found(king_color, self.squares[(king_pos[0], y1)].image, [self.pieces_white["q"], self.pieces_white["r"]], [self.pieces_black["q"], self.pieces_black["r"]]):
-                        return True#, (king_pos[0], y1)
+                        return True, (king_pos[0], y1)
                     y1 = 8
             if x2 >= 0:
                 if self.squares[(x2, king_pos[1])].image != self.blank:
                     if self.piece_found(king_color, self.squares[(x2, king_pos[1])].image, [self.pieces_white["q"], self.pieces_white["r"]], [self.pieces_black["q"], self.pieces_black["r"]]):
-                        return True#, (x2, king_pos[1])
+                        return True, (x2, king_pos[1])
                     x2 = -1
             if y2 >= 0:
                 if self.squares[(king_pos[0], y2)].image != self.blank:
                     if self.piece_found(king_color, self.squares[(king_pos[0], y2)].image, [self.pieces_white["q"], self.pieces_white["r"]], [self.pieces_black["q"], self.pieces_black["r"]]):
-                        return True#, (king_pos[0], y2)
+                        return True, (king_pos[0], y2)
                     y2 = -1
-        return False
+        return False, None
     
-    def check_knight(self, king_pos: tuple, king_color: bool):
+    def check_knight(self, king_pos: tuple[int, int], king_color: bool) -> tuple[bool, tuple[int, int]]:
         x, y = king_pos[0], king_pos[1]
         if king_color:
             piece = self.pieces_black["n"]
@@ -483,48 +511,69 @@ class Board(tk.Frame):
             piece = self.pieces_white["n"]
         try:
             if self.squares[(x + 1, y + 2)].image == piece:
-                return True#, (x+1, y+2)
-            if self.squares[(x + 1, y - 2)].image == piece:
-                return True#, (x+1, y-2)
-            if self.squares[(x - 1, y + 2)].image == piece:
-                return True#, (x-1, y+2)
-            if self.squares[(x - 1, y - 2)].image == piece:
-                return True#, (x-1, y-2)
-            if self.squares[(x + 2, y + 1)].image == piece:
-                return True#, (x+2, y+1)
-            if self.squares[(x + 2, y - 1)].image == piece:
-                return True#, (x+2, y-1)
-            if self.squares[(x - 2, y + 1)].image == piece:
-                return True#, (x-2, y+1)
-            if self.squares[(x - 2, y - 1)].image == piece:
-                return True#, (x-2, y-1)
+                return True, (x+1, y+2)
         except KeyError:
             pass
-        return False
+        try:
+            if self.squares[(x + 1, y - 2)].image == piece:
+                return True, (x+1, y-2)
+        except KeyError:
+            pass
+        try:
+            if self.squares[(x - 1, y + 2)].image == piece:
+                return True, (x-1, y+2)
+        except KeyError:
+            pass
+        try:
+            if self.squares[(x - 1, y - 2)].image == piece:
+                return True, (x-1, y-2)
+        except KeyError:
+            pass
+        try:
+            if self.squares[(x + 2, y + 1)].image == piece:
+                return True, (x+2, y+1)
+        except KeyError:
+            pass
+        try:
+            if self.squares[(x + 2, y - 1)].image == piece:
+                return True, (x+2, y-1)
+        except KeyError:
+            pass
+        try:
+            if self.squares[(x - 2, y + 1)].image == piece:
+                return True, (x-2, y+1)
+        except KeyError:
+            pass
+        try:
+            if self.squares[(x - 2, y - 1)].image == piece:
+                return True, (x-2, y-1)
+        except KeyError:
+            pass
+        return False, None
 
-    def check_pawn(self, king_pos: tuple, king_color: bool): #proc to nefunguje?!!
+    def check_pawn(self, king_pos: tuple[int, int], king_color: bool) -> tuple[bool, tuple[int, int]]:
         x, y = king_pos[0], king_pos[1]
         try:
             if king_color:
+                if self.squares[(x - 1, y + 1)].image == self.pieces_black["p"]:
+                    return True, (x-1, y+1)
                 if self.squares[(x + 1, y + 1)].image == self.pieces_black["p"]:
-                    return True#, (x+1, y+1)
-                if self.squares[(x + 1, y - 1)].image == self.pieces_black["p"]:
-                    return True#, (x+1, y-1)
+                    return True, (x+1, y+1)
             else:
-                if self.squares[(x - 1, y + 1)].image == self.pieces_white["p"]:
-                    return True#, (x-1, y+1)
+                if self.squares[(x + 1, y - 1)].image == self.pieces_white["p"]:
+                    return True, (x+1, y-1)
                 if self.squares[(x - 1, y - 1)].image == self.pieces_white["p"]:
-                    return True#, (x-1, y-1)
+                    return True, (x-1, y-1)
         except KeyError:
             pass
-        return False
+        return False, None
 
     
-    def king_check(self, king_pos, king_color): #king_color: True - white, False - black
-        b_q = self.check_bishop_queen(king_pos, king_color)
-        r_q = self.check_rook_queen(king_pos, king_color)
-        n = self.check_knight(king_pos, king_color)
-        p = self.check_pawn(king_pos, king_color)
+    def check_piece_threats(self, pos: tuple[int, int], color: bool) -> tuple[bool, list]: #king_color: True - white, False - black
+        b_q, pos_bq = self.check_bishop_queen(pos, color)
+        r_q, pos_rq = self.check_rook_queen(pos, color)
+        n, pos_n = self.check_knight(pos, color)
+        p, pos_p = self.check_pawn(pos, color)
         """
         if b_q:
             return True, pos_bq
@@ -538,7 +587,7 @@ class Board(tk.Frame):
         return False, None
         """
         print("Check: " + str(b_q) + ", " + str(r_q) + ", " + str(n) + ", " + str(p))
-        return (b_q or r_q or n or p)
+        return (b_q or r_q or n or p), [pos_bq, pos_rq, pos_n, pos_p]
     
 
 root = tk.Tk()
