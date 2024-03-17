@@ -154,7 +154,11 @@ class Board(tk.Frame):
                 self.position_white[self.find_white_piece_index(self.first_pos)] = self.second_pos
                 opponent_check, check_pos = self.check_piece_threats(self.black_king_pos, False)
                 if opponent_check:
-                    pass
+                    if not self.try_move_king(False):
+                        for p in check_pos:
+                            if self.take_threat_piece(p, False) or self.block_threat_piece(p, False):
+                                break
+                        self.end_game(False)
             else:
                 check, _ = self.check_piece_threats(self.black_king_pos, False)
                 if check:
@@ -174,8 +178,12 @@ class Board(tk.Frame):
                 self.position_black[self.find_black_piece_index(self.first_pos)] = self.second_pos
                 opponent_check, check_pos = self.check_piece_threats(self.white_king_pos, True)
                 if opponent_check:
-                    pass
-
+                    if not self.try_move_king(True):
+                        for p in check_pos:
+                            if self.take_threat_piece(p, True) or self.block_threat_piece(p, True):
+                                break
+                        self.end_game(True)
+                        
             self.button_clicks += 1
             self.turns += 1
             self.base_color(self.first_pos)
@@ -190,6 +198,11 @@ class Board(tk.Frame):
             self.button_clicks += 1
         return
     
+    def end_game(self, color):
+        print("Konec hry: " + color)
+        #todo
+        return
+    
     def try_for_check(self, first_pos: tuple[int, int], second_pos: tuple[int, int], color: bool) -> bool:
         try:
             if self.check_move_legality(first_pos, second_pos):
@@ -197,7 +210,7 @@ class Board(tk.Frame):
                 second_piece = self.squares[second_pos].image
                 self.squares[first_pos].image = self.blank
                 self.squares[second_pos].image = first_piece
-                threatened = self.check_piece_threats(second_pos, color)
+                threatened, _ = self.check_piece_threats(second_pos, color)
                 self.squares[first_pos].image = first_piece
                 self.squares[second_pos].image = second_piece
                 if threatened:
@@ -206,13 +219,86 @@ class Board(tk.Frame):
         except KeyError:
             return False
         
+    def block_rook_path(self, king: tuple[int, int], pos: tuple[int, int], color: bool) -> bool:
+        if king[0] == pos[0]:
+            min_y, max_y = min(king[1], pos[1]), max(king[1], pos[1])
+            for i in range(min_y+1, max_y):
+                if self.take_threat_piece((pos[0], i), color):
+                    return True
+        if king[1] == pos[1]:
+            min_x, max_x = min(king[0], pos[0]), max(king[0], pos[0])
+            for i in range(min_x, max_x):
+                if self.take_threat_piece((i, pos[1]), color):
+                    return True
+        return False
+
+    def block_bishop_path(self, king: tuple[int, int], pos: tuple[int, int], color: bool) -> bool:
+        if (abs(pos[0] - king[0]) != abs(pos[1] - king[1])):
+            return False
+        y = pos[1]
+        if king[0] > pos[0]: #   x ->
+            if king[1] > pos[1]: #y ↑
+                for x in range(pos[0] + 1, king[0]):
+                    y += 1
+                    if self.take_threat_piece((x, y), color):
+                        return True
+            if king[1] < pos[1]: #y ↓
+                for x in range(pos[0] + 1, king[0]):
+                    y -= 1
+                    if self.take_threat_piece((x, y), color):
+                        return True
+        if king[0] < pos[0]: #x <-
+            if king[1] > pos[1]: #y ↑
+                for x in range(pos[0] - 1, king[0], -1):
+                    y += 1
+                    if self.take_threat_piece((x, y), color):
+                        return True
+            if king[0] < pos[0]: #y ↓
+                for x in range(pos[0] - 1, king[0], -1):
+                    y -= 1
+                    if self.take_threat_piece((x, y), color):
+                        return True
+        return False
+    
+    def block_threat_piece(self, pos: tuple[int, int], color: bool) -> bool:
+        if color:
+            king = self.white_king_pos
+            pieces = self.pieces_black
+        else:
+            king = self.black_king_pos
+            pieces = self.pieces_white
+        piece = self.squares[pos].image
+        if piece == pieces["p"] or pieces["n"]:
+            return False
+        if piece == pieces["r"] or pieces["q"]:
+            if self.block_rook_path(king, pos, color):
+                return True
+        if piece == pieces["r"] or pieces["q"]:
+            if self.block_bishop_path(king, pos, color):
+                return True
+        return False
+        
+    def take_threat_piece(self, pos: tuple[int, int], color: bool) -> bool: #todo rename
+        threatened, threat_pos = self.check_piece_threats(pos, not color)
+        if threatened:
+            for p in threat_pos:
+                if p != None:
+                    if self.try_for_check(p, pos, color):
+                        return True
+        return False
+        
     
     def try_move_king(self, color: bool) -> bool:
         if color:
             king = self.white_king_pos
         else:
             king = self.black_king_pos
-        moves = [(king[0], king[1])]
+        x, y = king[0], king[1]
+        moves = [(x, y+1), (x+1,y+1), (x+1,y), (x+1,y-1), (x,y-1), (x-1,y-1), (x-1,y), (x-1,y+1)]
+        for move in moves:
+            if self.try_for_check(king, move, color):
+                return True
+        return False
         
     
     def find_white_piece_index(self, pos: tuple[int, int]) -> int:
@@ -509,46 +595,13 @@ class Board(tk.Frame):
             piece = self.pieces_black["n"]
         else:
             piece = self.pieces_white["n"]
-        try:
-            if self.squares[(x + 1, y + 2)].image == piece:
-                return True, (x+1, y+2)
-        except KeyError:
-            pass
-        try:
-            if self.squares[(x + 1, y - 2)].image == piece:
-                return True, (x+1, y-2)
-        except KeyError:
-            pass
-        try:
-            if self.squares[(x - 1, y + 2)].image == piece:
-                return True, (x-1, y+2)
-        except KeyError:
-            pass
-        try:
-            if self.squares[(x - 1, y - 2)].image == piece:
-                return True, (x-1, y-2)
-        except KeyError:
-            pass
-        try:
-            if self.squares[(x + 2, y + 1)].image == piece:
-                return True, (x+2, y+1)
-        except KeyError:
-            pass
-        try:
-            if self.squares[(x + 2, y - 1)].image == piece:
-                return True, (x+2, y-1)
-        except KeyError:
-            pass
-        try:
-            if self.squares[(x - 2, y + 1)].image == piece:
-                return True, (x-2, y+1)
-        except KeyError:
-            pass
-        try:
-            if self.squares[(x - 2, y - 1)].image == piece:
-                return True, (x-2, y-1)
-        except KeyError:
-            pass
+        
+        for i in (-2, 2):
+            for j in (-1, 1):
+                if self.squares.get(x+i, y+j, None).image == piece:
+                    return True, (x+i, y+j)
+                if self.squares.get(x+j, y+i, None).image == piece:
+                    return True, (x+j, y+i)
         return False, None
 
     def check_pawn(self, king_pos: tuple[int, int], king_color: bool) -> tuple[bool, tuple[int, int]]:
