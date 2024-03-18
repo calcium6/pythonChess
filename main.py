@@ -153,9 +153,12 @@ class Board(tk.Frame):
                     return
                 self.position_white[self.find_white_piece_index(self.first_pos)] = self.second_pos
                 opponent_check, check_pos = self.check_piece_threats(self.black_king_pos, False)
+                print("opponent check: " + str(opponent_check))
                 if opponent_check:
                     if not self.try_move_king(False):
                         for p in check_pos:
+                            if p is None:
+                                continue
                             if self.take_threat_piece(p, False) or self.block_threat_piece(p, False):
                                 break
                         self.end_game(False)
@@ -177,9 +180,12 @@ class Board(tk.Frame):
                     return
                 self.position_black[self.find_black_piece_index(self.first_pos)] = self.second_pos
                 opponent_check, check_pos = self.check_piece_threats(self.white_king_pos, True)
+                print("opponent check: " + str(opponent_check))
                 if opponent_check:
                     if not self.try_move_king(True):
                         for p in check_pos:
+                            if p is None:
+                                continue
                             if self.take_threat_piece(p, True) or self.block_threat_piece(p, True):
                                 break
                         self.end_game(True)
@@ -199,7 +205,7 @@ class Board(tk.Frame):
         return
     
     def end_game(self, color):
-        print("Konec hry: " + color)
+        print("Konec hry: " + str(color))
         #todo
         return
     
@@ -598,9 +604,13 @@ class Board(tk.Frame):
         
         for i in (-2, 2):
             for j in (-1, 1):
-                if self.squares.get(x+i, y+j, None).image == piece:
+                if x+i or x+j or y+i or y+j > 7:
+                    continue
+                if x+i or x+j or y+i or y+j < 0:
+                    continue
+                if self.squares.get((x+i, y+j)).image == piece:
                     return True, (x+i, y+j)
-                if self.squares.get(x+j, y+i, None).image == piece:
+                if self.squares.get((x+j, y+i)).image == piece:
                     return True, (x+j, y+i)
         return False, None
 
