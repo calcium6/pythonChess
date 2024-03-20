@@ -407,7 +407,6 @@ class Board(tk.Frame):
         return False
     
     def move_pawn(self, first_pos: tuple[int, int], second_pos: tuple[int, int]) -> bool:
-        return True
         selected_piece = self.first_button.image
         if first_pos[1] == 1: #První pohyb pro bílou
             if second_pos[1] - first_pos[1] == 2 and second_pos[0] == first_pos[0]:
