@@ -5,11 +5,6 @@ Problémy vyřešené:
     4. Nejdriv byla policka cislovana celymi cislo (0 - 63), ted maji kazda svoji souradnici [x,y] (tuple)
     5. 
 
-
-self.images_white = ["pyimage1", "pyimage3", "pyimage4", "pyimage5", "pyimage6", "pyimage7"]
-self.images_black = ["pyimage8", "pyimage10", "pyimage11", "pyimage12", "pyimage13", "pyimage14"]
-self.images_blank = ["pyimages2", "pyimages9"]
-
 +- 7
 1 - b
 2 - blank
@@ -20,24 +15,17 @@ self.images_blank = ["pyimages2", "pyimages9"]
 7 - r
 
 TODO:
-king in check
-pawn promotion
+restart hry po dokonceni zapasu
 castling
 en passant
+- fen notation (?)
 
 
-???
-self.squares[self.second_pos].config(image = self.first_button["image"])
-self.squares[self.second_pos].image = self.first_button["image"]
-self.squares[self.first_pos].config(image = self.pieces_black["blank"])
-self.squares[self.first_pos].image = self.pieces_black["blank"]
 
-
-mate
-kontrola na konci kola pro protihracova hrale
+sach mat
+kontrola na konci kola pro protihracova krale
 pokud je v sachu zkontroluje se jestli ma zbyvajici legalni tahy:
     muze se pohnout kral?
     lze zablokovat sach jinou figurkou? (pouze kralovna, strelec, vez)
     lze vzit figurku ohrozujici krale?
-    (pro kazdou figurku projit vsechny policka, pokud ani jedno nevyusti v opusteni krale ze sachu tak je konec hry)
 pokud ani jedna neni pravdiva tak je konec hry, vyhrava hrac co byl prave na tahu

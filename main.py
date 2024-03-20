@@ -4,23 +4,23 @@ from PIL import Image, ImageTk
 import PIL
 
 class Board(tk.Frame):
-    def __init__(self, root):
-        tk.Frame.__init__(self, root)
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.geometry('720x720+600+100')
+        self.root.title("Chess")
+        self.root.iconbitmap("")
+
+        tk.Frame.__init__(self, self.root)
         self.pack(padx = 30, pady = 30)
 
-        #self.images_white = ["pyimage1", "pyimage3", "pyimage4", "pyimage5", "pyimage6", "pyimage7"]
-        #self.images_black = ["pyimage8", "pyimage10", "pyimage11", "pyimage12", "pyimage13", "pyimage14"]
         self.white = []
         self.black = []
-        #self.images_blank = ["pyimages2", "pyimages9"]
         self.blank = None
 
         self.white_king_pos = (4,0)
-        self.position_white = [(0,0), (1,0), (2,0), (3,0), (4,0), (5,0), (6,0), (7,0), (0,1), (1,1), (2,1), (3,1), (4,1), (5,1), (6,1), (7,1)]
-        #???self.position_white = [(i,j) for j in range(8) for i in range(0,2)]
         self.black_king_pos = (4,7)
-        self.position_black = [(0,7), (1,7), (2,7), (3,7), (4,7), (5,7), (6,7), (7,7), (0,6), (1,6), (2,6), (3,6), (4,6), (5,6), (6,6), (7,6)]
         self.king_moved = False
+        self.promoting = False
 
         self.first_pos = None
         self.second_pos = None
@@ -100,6 +100,8 @@ class Board(tk.Frame):
         self.place_pieces()
 
     def select(self, pos: tuple):
+        if self.promoting:
+            return
         print(pos)
         print(str(self.squares[pos].image))
         if self.button_clicks % 2 == 0:
@@ -132,68 +134,17 @@ class Board(tk.Frame):
             self.second_button["image"] = str(first_image)
             self.first_button.image = self.blank
             self.first_button["image"] = str(self.blank)
-            
-            #print("white king: " + str(self.white_king_pos))
-            #print("black king: " + str(self.black_king_pos))
-            if self.turns % 2 == 0: #kontrola sachu pro hrace momentalne na rade
-                check, _ = self.check_piece_threats(self.white_king_pos, True)
-                if check:
-                    self.second_button.image = second_image
-                    self.second_button["image"] = str(second_image)
-                    self.first_button.image = first_image
-                    self.first_button["image"] = str(first_image)
-                    if self.king_moved:
-                        print("Zmena krale zpatky")
-                        self.white_king_pos = self.first_pos
-                    self.king_moved = False
-                    print("Zadny pohyb :(")
-                    self.base_color(self.first_pos)
-                    self.base_color(pos)
-                    self.button_clicks += 1
-                    return
-                self.position_white[self.find_white_piece_index(self.first_pos)] = self.second_pos
-                opponent_check, check_pos = self.check_piece_threats(self.black_king_pos, False)
-                print("opponent check: " + str(opponent_check))
-                if opponent_check:
-                    if not self.try_move_king(False):
-                        for p in check_pos:
-                            if p is None:
-                                continue
-                            if self.take_threat_piece(p, False) or self.block_threat_piece(p, False):
-                                break
-                        self.end_game(False)
-            else:
-                check, _ = self.check_piece_threats(self.black_king_pos, False)
-                if check:
-                    self.second_button.image = second_image
-                    self.second_button["image"] = str(second_image)
-                    self.first_button.image = first_image
-                    self.first_button["image"] = str(first_image)
-                    if self.king_moved:
-                        print("Zmena krale zpatky")
-                        self.black_king_pos = self.first_pos
-                    self.king_moved = False
-                    print("Zadny pohyb :(")
-                    self.base_color(self.first_pos)
-                    self.base_color(pos)
-                    self.button_clicks += 1
-                    return
-                self.position_black[self.find_black_piece_index(self.first_pos)] = self.second_pos
-                opponent_check, check_pos = self.check_piece_threats(self.white_king_pos, True)
-                print("opponent check: " + str(opponent_check))
-                if opponent_check:
-                    if not self.try_move_king(True):
-                        for p in check_pos:
-                            if p is None:
-                                continue
-                            if self.take_threat_piece(p, True) or self.block_threat_piece(p, True):
-                                break
-                        self.end_game(True)
-                        
-            self.button_clicks += 1
-            self.turns += 1
             self.base_color(self.first_pos)
             self.base_color(pos)
+
+            if self.check_current_turn(pos, self.turns % 2 == 0, first_image, second_image):
+                return
+            
+            print("hovno2")
+            self.button_clicks += 1
+            print("hovno3")
+            self.turns += 1
+            print("hovno4")
             if self.king_moved:
                 self.king_moved = False
             return
@@ -204,10 +155,109 @@ class Board(tk.Frame):
             self.button_clicks += 1
         return
     
-    def end_game(self, color):
+    def end_game(self, color: bool) -> None:
         print("Konec hry: " + str(color))
         #todo
         return
+    
+    def set_promotion_image(self, color: bool, piece: str) -> tk.PhotoImage:
+        if color:
+            return self.pieces_white[piece]
+        else:
+            return self.pieces_black[piece]
+        
+    def root_conf(self, e):
+        self.promo.geometry('{}x{}+{}+{}'.format(self.promo.winfo_width(), self.promo.winfo_height(), e.x + 196, e.y + 340))
+
+    def promote_pawn(self, pos: tuple[int, int], color: bool) -> None:
+        self.promoting = True
+        def return_piece(piece, pos):
+            self.squares[pos]["image"] = str(piece)
+            self.squares[pos].image = piece
+            self.promo.destroy()
+            self.promo.quit()
+            return
+        
+        self.root.bind('<Configure>', self.root_conf)
+        self.promo = tk.Toplevel(self.root)
+        self.promo.geometry("+%d+%d" % (self.root.winfo_x() + 196, self.root.winfo_y() + 340))
+        self.promo.overrideredirect(True)
+        self.promo.grab_set()
+        self.promo.title("Pawn promotion")
+        if color:
+            promo_knight = tk.Button(self.promo, text="Knight", command=lambda: return_piece(self.pieces_white["n"], pos))
+            promo_knight.grid(row=0, column=0)
+            promo_bishop = tk.Button(self.promo, text="Bishop", command=lambda: return_piece(self.pieces_white["b"], pos))
+            promo_bishop.grid(row=0, column=1)
+            promo_rook = tk.Button(self.promo, text="Rook", command=lambda: return_piece(self.pieces_white["r"], pos))
+            promo_rook.grid(row=0, column=2)
+            promo_queen = tk.Button(self.promo, text="Queen", command=lambda: return_piece(self.pieces_white["q"], pos))
+            promo_queen.grid(row=0, column=3)
+        elif not color:
+            promo_knight = tk.Button(self.promo, text="Knight", command=lambda: return_piece(self.pieces_black["n"], pos))
+            promo_knight.grid(row=0, column=0)
+            promo_bishop = tk.Button(self.promo, text="Bishop", command=lambda: return_piece(self.pieces_black["b"], pos))
+            promo_bishop.grid(row=0, column=1)
+            promo_rook = tk.Button(self.promo, text="Rook", command=lambda: return_piece(self.pieces_black["r"], pos))
+            promo_rook.grid(row=0, column=2)
+            promo_queen = tk.Button(self.promo, text="Queen", command=lambda: return_piece(self.pieces_black["q"], pos))
+            promo_queen.grid(row=0, column=3)
+        promo_knight["image"] = self.set_promotion_image(color, "n")
+        promo_bishop["image"] = self.set_promotion_image(color, "b")
+        promo_rook["image"] = self.set_promotion_image(color, "r")
+        promo_queen["image"] = self.set_promotion_image(color, "q")
+        self.promo.protocol("WM_DELETE_WINDOW", lambda: None)
+        self.promo.mainloop()
+        self.promoting = False
+        return
+        
+    
+    def check_current_turn(self, pos: tuple[int, int], color: bool, first_image: tk.PhotoImage, second_image: tk.PhotoImage) -> bool:
+        if color:
+            king = self.white_king_pos
+            king_opponent = self.black_king_pos
+            pawn = self.pieces_white["p"]
+        else:
+            king = self.black_king_pos
+            king_opponent = self.white_king_pos
+            pawn = self.pieces_black["p"]
+        check, _ = self.check_piece_threats(king, color)
+        if check:
+            self.second_button.image = second_image
+            self.second_button["image"] = str(second_image)
+            self.first_button.image = first_image
+            self.first_button["image"] = str(first_image)
+            if self.king_moved:
+                print("Zmena krale zpatky")
+                if color:
+                    self.white_king_pos = self.first_pos
+                else:
+                    self.black_king_pos = self.first_pos
+                king = self.first_pos
+            self.king_moved = False
+            print("Zadny pohyb :(")
+            self.base_color(self.first_pos)
+            self.base_color(pos)
+            self.button_clicks += 1
+            return True
+        if self.squares[self.second_pos].image == pawn:
+            print("pawn moved")
+            print(str(self.second_pos[1] == 0))
+            print(str(self.second_pos[1] == 7))
+            if self.second_pos[1] == 0 or self.second_pos[1] == 7:
+                print("promote pawn")
+                self.promote_pawn(pos, color)
+        print("hovno")
+        opponent_check, check_pos = self.check_piece_threats(king_opponent, not color)
+        print("opponent check: " + str(opponent_check))
+        if opponent_check:
+            if not self.try_move_king(not color):
+                for p in check_pos:
+                    if p is None:
+                        continue
+                    if self.take_threat_piece(p, not color) or self.block_threat_piece(p, not color):
+                        break
+                self.end_game(not color)
     
     def try_for_check(self, first_pos: tuple[int, int], second_pos: tuple[int, int], color: bool) -> bool:
         try:
@@ -292,7 +342,6 @@ class Board(tk.Frame):
                     if self.try_for_check(p, pos, color):
                         return True
         return False
-        
     
     def try_move_king(self, color: bool) -> bool:
         if color:
@@ -305,21 +354,9 @@ class Board(tk.Frame):
             if self.try_for_check(king, move, color):
                 return True
         return False
-        
-    
-    def find_white_piece_index(self, pos: tuple[int, int]) -> int:
-        for index, position in enumerate(self.position_white):
-            if position == pos:
-                return index
-        print("????????")
-
-    def find_black_piece_index(self, pos: tuple[int, int]) -> int:
-        for index, position in enumerate(self.position_black):
-            if position == pos:
-                return index
-        print("????????")
     
     def move_bishop(self, first_pos: tuple[int, int], second_pos: tuple[int, int]) -> bool:
+        print("bishop check")
         if (abs(first_pos[0] - second_pos[0]) != abs(first_pos[1] - second_pos[1])): #Kontrola rozdílu v pozicích
             return False
         y = first_pos[1]
@@ -328,26 +365,26 @@ class Board(tk.Frame):
                 for x in range(first_pos[0] + 1, second_pos[0]):
                     y += 1
                     if (self.squares[(x, y)].image != self.blank):
-                        print("V cestě je figurka: " + str(x) + " , " + str(y))
+                        print("1V cestě je figurka: " + str(x) + " , " + str(y))
                         return False
             if second_pos[1] < first_pos[1]: #y ↓
                 for x in range(first_pos[0] + 1, second_pos[0]):
                     y -= 1
                     if (self.squares[(x, y)].image != self.blank):
-                        print("V cestě je figurka: " + str(x) + " , " + str(y))
+                        print("2V cestě je figurka: " + str(x) + " , " + str(y))
                         return False
         if second_pos[0] < first_pos[0]: #x <-
             if second_pos[1] > first_pos[1]: #y ↑
                 for x in range(first_pos[0] - 1, second_pos[0], -1):
                     y += 1
                     if (self.squares[(x, y)].image != self.blank):
-                        print("V cestě je figurka: " + str(x) + " , " + str(y))
+                        print("3V cestě je figurka: " + str(x) + " , " + str(y))
                         return False
-            if second_pos[0] < first_pos[0]: #y ↓
+            if second_pos[1] < first_pos[1]: #y ↓
                 for x in range(first_pos[0] - 1, second_pos[0], -1):
                     y -= 1
                     if (self.squares[(x, y)].image != self.blank):
-                        print("V cestě je figurka: " + str(x) + " , " + str(y))
+                        print("4V cestě je figurka: " + str(x) + " , " + str(y))
                         return False
         return True
 
@@ -370,6 +407,7 @@ class Board(tk.Frame):
         return False
     
     def move_pawn(self, first_pos: tuple[int, int], second_pos: tuple[int, int]) -> bool:
+        return True
         selected_piece = self.first_button.image
         if first_pos[1] == 1: #První pohyb pro bílou
             if second_pos[1] - first_pos[1] == 2 and second_pos[0] == first_pos[0]:
@@ -510,7 +548,7 @@ class Board(tk.Frame):
             pass
         return False
     
-    def piece_found(self, king_color: bool, piece: 'PIL.ImageTk.PhotoImage', check_black: list, check_white: list) -> bool:
+    def piece_found(self, king_color: bool, piece: tk.PhotoImage, check_black: list, check_white: list) -> bool:
         if king_color == False: #black king
             if piece in self.black:
                 if piece != self.pieces_black["k"]:
@@ -637,28 +675,9 @@ class Board(tk.Frame):
         r_q, pos_rq = self.check_rook_queen(pos, color)
         n, pos_n = self.check_knight(pos, color)
         p, pos_p = self.check_pawn(pos, color)
-        """
-        if b_q:
-            return True, pos_bq
-        if r_q:
-            return True, pos_rq
-        if n:
-            return True, pos_n
-        if p:
-            return True, pos_p
-        #return b_q or r_q or n or p
-        return False, None
-        """
         print("Check: " + str(b_q) + ", " + str(r_q) + ", " + str(n) + ", " + str(p))
         return (b_q or r_q or n or p), [pos_bq, pos_rq, pos_n, pos_p]
-    
 
-root = tk.Tk()
-root.title("Chess")
-root.iconbitmap("")
-
-board = Board(root)
+board = Board()
 board.start()
-#board.set_board()
-
-root.mainloop()
+board.root.mainloop()
