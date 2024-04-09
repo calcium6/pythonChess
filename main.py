@@ -42,6 +42,7 @@ class Board(tk.Frame):
 
         self.board_states = {}
         self.halfmoves = 0 #TODO
+        self.piece_taken = False
         self.en_passant_pawn = (False, None, None) #TODO
         self.moves = 0
         self.set_board()
@@ -192,26 +193,33 @@ class Board(tk.Frame):
                 self.squares[pos].config(bg = "#baca44")
             return
         self.hide_moves()
+        print("Can castle................................................")
+        print(self.castling_pieces(self.moves % 2 == 0, self.first_pos, pos))
         if self.castling_pieces(self.moves % 2 == 0, self.first_pos, pos):
-            self.castle(self.moves % 2 == 0, self.first_button, pos)
-            pass #TODO: if castling true -> set castling pieces
+            if self.castle(self.moves % 2 == 0, self.first_pos, pos):
+                self.halfmoves += 1
+                self.moves += 1
+                print("Castle..............................................v")
+            self.base_color(self.first_pos)
+            self.base_color(pos)
+            self.button_clicks += 1
+            return
         if pos == self.first_pos: #Oba kliky na stejnou figurku
             print("Stejná figurka")
             self.base_color(self.first_pos)
             self.base_color(pos)
             self.button_clicks += 1
             return
-        print("Kontrola legality pohybu")
-        print(self.moves)
-        print(self.first_pos)
-        print(pos)
         if (self.check_move_legality(self.moves % 2 == 0, self.first_pos, pos, True)):
-            print("wsup")
-            #print("Pohyb z " + str(self.first_pos) + " na " + str(pos)) 
+            #print("Pohyb z " + str(self.first_pos) + " na " + str(pos))
             self.second_pos = pos
             self.second_button = self.squares[pos]
             first_image = self.first_button.image
             second_image = self.second_button.image
+            if second_image in self.pieces_black.values() or second_image in self.pieces_white.values():
+                self.piece_taken = True
+            if first_image == self.pieces_white["p"] or first_image == self.pieces_black["p"]:
+                self.piece_taken = True
             self.second_button.image = first_image
             self.second_button["image"] = first_image
             self.first_button.image = self.blank
@@ -234,6 +242,14 @@ class Board(tk.Frame):
             if self.en_passant_pawn[0] and self.moves > self.en_passant_pawn[2]:
                     self.en_passant_pawn = (False, None, None)
                     self.en_passant_made = False
+                    self.halfmoves = 0
+            if self.piece_taken:
+                self.halfmoves = 0
+                self.piece_taken = False
+            else:
+                self.halfmoves += 1
+            if self.halfmoves == 100:
+                self.draw_by_50_moves()
             if current_fen in self.board_states:
                 self.board_states[current_fen] += 1
                 if self.board_states[current_fen] == 3:
@@ -251,12 +267,17 @@ class Board(tk.Frame):
     
     def end_game(self, color: bool) -> None:
         print("Konec hry: " + str(color))
-        #todo
+        #TODO
+        return
+    
+    def draw_by_50_moves(self) -> None:
+        print("Remiza nic nedelanim")
+        #TODO
         return
     
     def draw_by_repetition(self) -> None:
         print("Remiza opakovanim")
-        #todo
+        #TODO
         return
     
     def check_duplicate_board_states(self):
@@ -308,8 +329,43 @@ class Board(tk.Frame):
     def get_fen_string(self) -> str:
         return " ".join(self.fen())
     
-    def castle(self, color, first_pos, second_pos):
-        pass
+    def castle(self, color: bool, first_pos: tuple[int,int], second_pos: tuple[int,int]) -> bool:
+        if color:
+            king = self.white_king_pos
+            king_piece = self.pieces_white["k"]
+            rook_piece = self.pieces_white["r"]
+        else:
+            king = self.black_king_pos
+            king_piece = self.pieces_black["k"]
+            rook_piece = self.pieces_black["r"]
+        y = king[1]
+        if second_pos[0] == 0:
+            new_king_pos = (king[0] - 2, y)
+            new_rook_pos = (king[0] - 1, y)
+        else:
+            new_king_pos = (king[0] + 2, y)
+            new_rook_pos = (king[0] + 1, y)
+        for x in range(min(first_pos[0], second_pos[0]) + 1, max(first_pos[0], second_pos[0])):
+            if self.squares[(x, y)].image != self.blank:
+                print(self.piece_to_str[self.squares[(x,y)].image])
+                print((x,y))
+                print("not empty")
+                return False
+        for x in range(min(new_king_pos[0], new_rook_pos[0]), max(new_king_pos[0], new_rook_pos[0]) + 1):
+            check, _ = self.check_piece_threats((x,y), color)
+            print("in check")
+            if check:
+                return False
+        self.set_image(first_pos, self.blank)
+        self.set_image(second_pos, self.blank)
+        self.set_image(new_king_pos, king_piece)
+        self.set_image(new_rook_pos, rook_piece)
+        self.white_castled = True
+        if color:
+            self.white_king_pos = new_king_pos
+        else:
+            self.black_king_pos = new_king_pos
+        return True
     
     def castling_pieces(self, color: bool, first_pos: tuple[int,int], second_pos: tuple[int,int]) -> bool:
         if color: #TODO: dat do funkce
@@ -326,21 +382,17 @@ class Board(tk.Frame):
             if second_pos in rookPos:
                 if color:
                     if not self.white_rook_move[second_pos]: #TODO: dat do funkce
-                        self.white_rook_move[second_pos] = True
                         return True
                 else:
                     if not self.black_rook_move[second_pos]:
-                        self.black_rook_move[second_pos] = True
                         return True
         if self.squares[second_pos].image == king:
             if first_pos in rookPos:
                 if color:
                     if not self.white_rook_move[first_pos]:
-                            self.white_rook_move[first_pos] = True
                             return True
                     else:
                         if not self.black_rook_move[first_pos]:
-                            self.black_rook_move[first_pos] = True
                             return True
         return False
         
@@ -427,6 +479,7 @@ class Board(tk.Frame):
             pawn = self.pieces_black["p"]
         check, _ = self.check_piece_threats(king, color)
         if check:
+            self.piece_taken = False
             self.second_button.image = second_image
             self.second_button["image"] = second_image
             self.first_button.image = first_image
