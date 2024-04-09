@@ -1,10 +1,3 @@
-Problémy vyřešené:
-    1. Vkládání obrázků - pillow
-    2. Button onclick - lambda
-    3. Porovnávání obrázků v poli - ukládány "pyimage[n]" - string seznam pyimage1,2,3,...
-    4. Nejdriv byla policka cislovana celymi cislo (0 - 63), ted maji kazda svoji souradnici [x,y] (tuple)
-    5. 
-
 +- 7
 1 - b
 2 - blank
@@ -15,17 +8,5 @@ Problémy vyřešené:
 7 - r
 
 TODO:
-castling
-menu pro restart hry
-rozpoznani remizy po 50 pohybech
-menu pri remize
-osetrit zadani nespravneho fen -> chybova hlaska, restart hry
-
-
-sach mat
-kontrola na konci kola pro protihracova krale
-pokud je v sachu zkontroluje se jestli ma zbyvajici legalni tahy:
-    muze se pohnout kral?
-    lze zablokovat sach jinou figurkou? (pouze kralovna, strelec, vez)
-    lze vzit figurku ohrozujici krale?
-pokud ani jedna neni pravdiva tak je konec hry, vyhrava hrac co byl prave na tahu
+menu pro restart hry/remizu
+pat (? - mega ne)

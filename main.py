@@ -1,5 +1,6 @@
 import os
 import tkinter as tk
+from tkinter import messagebox
 from PIL import Image, ImageTk
 import PIL
 
@@ -9,8 +10,10 @@ class Board(tk.Frame):
         self.root.configure(background="#302e2b")
         self.create_menu()
         self.root.geometry('720x720+600+100')
+        self.root.minsize(720, 720)
+        self.root.maxsize(720, 720)
         self.root.title("Chess")
-        self.root.iconbitmap("")
+        self.root.iconbitmap('appIcon.ico')
 
         tk.Frame.__init__(self, self.root)
         self.pack(padx = 30, pady = 30)
@@ -41,20 +44,58 @@ class Board(tk.Frame):
         self.pieces_black = {}
 
         self.board_states = {}
-        self.halfmoves = 0 #TODO
+        self.halfmoves = 0
         self.piece_taken = False
-        self.en_passant_pawn = (False, None, None) #TODO
+        self.en_passant_pawn = (False, None, None)
         self.moves = 0
         self.set_board()
+        self.load_pieces()
+    
+    def load_game_from_fen(self, load_entry: tk.Entry):
+        try:
+            fen = (load_entry.get()).split(" ")
+            self.start(fen[0], fen[1], fen[2], fen[3], fen[4], fen[5])
+        except:
+            messagebox.showerror("Chyba", "Nesprávný formát FEN")
+        self.load_window.destroy()
+
+    def load_menu(self):
+        self.load_window = tk.Toplevel(self.root)
+        self.load_window.geometry("500x200+710+380")
+        self.load_window.title("Nahrání pozice")
+        self.load_window.iconbitmap('appIcon.ico')
+
+        label = tk.Label(self.load_window, text="Zadej řetězec notace FEN:", font=('Helvetica 12'))
+        label.pack(pady=20)
+        load_entry = tk.Entry(self.load_window, width=76)
+        load_entry.pack()
+        
+        self.load_button = tk.Button(self.load_window,text= "Nahrát", font=('Helvetica 12'), command= lambda:self.load_game_from_fen(load_entry))
+        self.cancel_button =tk.Button(self.load_window, text="Zrušit", font=('Helvetica 12'), command=lambda:self.load_window.destroy())
+        self.load_button.pack(pady=10,side=tk.TOP)
+        self.cancel_button.pack(pady=10, side=tk.TOP)
+
+    def popup_current_fen(self):
+        show_window = tk.Toplevel(self.root)
+        show_window.iconbitmap('appIcon.ico')
+        ent = tk.Entry(show_window, font=('Helvetica 12'), width=55, state='readonly', justify='center')
+        var = tk.StringVar()
+        var.set(self.get_fen_string())
+        ent.config(textvariable=var)
+        but = tk.Button(show_window, font=('Helvetica 12'), text="Zavřít", command=lambda: show_window.destroy())
+        ent.pack(padx=15, pady=15, side=tk.TOP)
+        but.pack(padx=15, pady=10, side=tk.TOP)
 
     def create_menu(self):
         self.menubar = tk.Menu(self.root)
         self.root.config(menu=self.menubar)
         
-        self.file_menu = tk.Menu(self.menubar, tearoff=False)
-        self.file_menu.add_command(label='Exit', command=self.root.destroy)
-
-        self.menubar.add_cascade(label="File", menu=self.file_menu)
+        self.options_menu = tk.Menu(self.menubar, tearoff=False)
+        self.options_menu.add_command(label="Restart hry", command=lambda: self.start())
+        self.options_menu.add_command(label="Načíst pozici", command=lambda: self.load_menu()) #TODO
+        self.options_menu.add_command(label="Vypsat pozici", command=lambda: self.popup_current_fen())
+        self.options_menu.add_command(label='Zavřít', command=self.root.destroy)
+        self.menubar.add_cascade(label="Možnosti", menu=self.options_menu)
 
     def set_board(self):
         for row in range(8):
@@ -152,16 +193,23 @@ class Board(tk.Frame):
         return
     
     def set_en_passant(self, en_passant: str) -> None:
-        #self.en_passant_pawn = TODO
+        if en_passant != "-":
+            self.en_passant_pawn = (True, (int(chr(ord(en_passant[0]) - 49)), int(en_passant[1])), self.moves)
         return
 
     def start(self, position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", on_turn = "w", castling = "KQkq", en_passant = "-", halfmove = "0", fullmove = "0") -> None:
-        self.load_pieces()
-        self.place_pieces(position)
-        self.set_turn(on_turn, halfmove, fullmove)
-        self.set_castling(castling)
-        self.set_en_passant(en_passant)
+        try:
+            self.place_pieces(position)
+            self.set_turn(on_turn, halfmove, fullmove)
+            self.set_castling(castling)
+            self.set_en_passant(en_passant)
+        except:
+            messagebox.showerror("Chyba", "Nesprávný formát FEN")
+            self.error_popup()
         return
+    
+    def error_popup(self):
+        pass #TODO
 
     def dokumentace_cervena(self, pos: tuple[int,int]) -> None:
         if ((pos[0] + pos[1]) % 2 == 1):
@@ -280,10 +328,6 @@ class Board(tk.Frame):
         #TODO
         return
     
-    def check_duplicate_board_states(self):
-        setList = list(set(self.board_states))
-        my_dict = {i:self.board_states.count(i) for i in setList}
-    
     def fen_board_placement(self) -> list[str]:
         piece_placement = ""
         for i in range(7, -1, -1):
@@ -323,8 +367,8 @@ class Board(tk.Frame):
         if castling == "":
             castling = "-"
         if self.en_passant_pawn[0]:
-            enpassant = chr(self.en_passant_pawn[1][0] + 97) + self.en_passant_pawn[1][1]
-        return [piece_placement, turn, castling, enpassant, self.halfmoves, self.moves//2]
+            enpassant = chr(self.en_passant_pawn[1][0] + 97) + str(self.en_passant_pawn[1][1])
+        return [piece_placement, turn, castling, enpassant, str(self.halfmoves), str(self.moves//2)]
     
     def get_fen_string(self) -> str:
         return " ".join(self.fen())
@@ -436,7 +480,7 @@ class Board(tk.Frame):
         
         self.root.bind('<Configure>', self.root_conf)
         self.promo = tk.Toplevel(self.root)
-        self.promo.geometry("+%d+%d" % (self.root.winfo_x() + 196, self.root.winfo_y() + 340)) # TODO: fix values
+        self.promo.geometry("+%d+%d" % (self.root.winfo_x() + (0.275 * self.root.winfo_width()), self.root.winfo_y() + (0.5 * self.root.winfo_height())))
         self.promo.overrideredirect(True)
         self.promo.grab_set()
         self.promo.title("Pawn promotion")
