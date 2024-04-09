@@ -15,11 +15,11 @@ Problémy vyřešené:
 7 - r
 
 TODO:
-restart hry po dokonceni zapasu
 castling
-en passant
-- fen notation (?)
-
+menu pro restart hry
+rozpoznani remizy po 50 pohybech
+menu pri remize
+osetrit zadani nespravneho fen -> chybova hlaska, restart hry
 
 
 sach mat

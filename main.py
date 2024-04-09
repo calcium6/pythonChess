@@ -42,7 +42,7 @@ class Board(tk.Frame):
 
         self.board_states = {}
         self.halfmoves = 0 #TODO
-        self.en_passant_pawn = None #TODO
+        self.en_passant_pawn = (False, None, None) #TODO
         self.moves = 0
         self.set_board()
 
@@ -170,6 +170,7 @@ class Board(tk.Frame):
         return
 
     def select(self, pos: tuple[int,int]) -> None:
+        print(self.en_passant_pawn)
         if self.promoting:
             return
         if self.button_clicks % 2 == 0:
@@ -212,9 +213,9 @@ class Board(tk.Frame):
             first_image = self.first_button.image
             second_image = self.second_button.image
             self.second_button.image = first_image
-            self.second_button["image"] = str(first_image)
+            self.second_button["image"] = first_image
             self.first_button.image = self.blank
-            self.first_button["image"] = str(self.blank)
+            self.first_button["image"] = self.blank
             self.base_color(self.first_pos)
             self.base_color(pos)
 
@@ -230,6 +231,9 @@ class Board(tk.Frame):
             self.moves += 1
             self.check_castling()
             current_fen = self.fen_board_placement()
+            if self.en_passant_pawn[0] and self.moves > self.en_passant_pawn[2]:
+                    self.en_passant_pawn = (False, None, None)
+                    self.en_passant_made = False
             if current_fen in self.board_states:
                 self.board_states[current_fen] += 1
                 if self.board_states[current_fen] == 3:
@@ -297,8 +301,8 @@ class Board(tk.Frame):
                 castling += "q"
         if castling == "":
             castling = "-"
-        if self.en_passant_pawn is not None:
-            enpassant = chr(self.en_passant_pawn[0] + 97) + self.en_passant_pawn[1]
+        if self.en_passant_pawn[0]:
+            enpassant = chr(self.en_passant_pawn[1][0] + 97) + self.en_passant_pawn[1][1]
         return [piece_placement, turn, castling, enpassant, self.halfmoves, self.moves//2]
     
     def get_fen_string(self) -> str:
@@ -424,9 +428,9 @@ class Board(tk.Frame):
         check, _ = self.check_piece_threats(king, color)
         if check:
             self.second_button.image = second_image
-            self.second_button["image"] = str(second_image)
+            self.second_button["image"] = second_image
             self.first_button.image = first_image
-            self.first_button["image"] = str(first_image)
+            self.first_button["image"] = first_image
             if self.king_moved:
                 if color:
                     print("Zmena bileho krale zpatky")
@@ -435,6 +439,12 @@ class Board(tk.Frame):
                     print("Zmena cerneho krale zpatky")
                     self.black_king_pos = self.first_pos
                 king = self.first_pos
+            if self.en_passant_made:
+                if color:
+                    self.set_image(self.en_passant_pawn[1], self.pieces_black["p"])
+                else:
+                    self.set_image(self.en_passant_pawn[1], self.pieces_white["p"])
+                self.en_passant_made = False
             self.king_moved = False
             print("Zadny pohyb :(")
             self.base_color(self.first_pos)
@@ -622,16 +632,22 @@ class Board(tk.Frame):
             return True
         return False
     
-    def move_pawn(self, first_pos: tuple[int, int], second_pos: tuple[int, int]) -> bool:
+    def move_pawn(self, first_pos: tuple[int, int], second_pos: tuple[int, int], in_game: bool) -> bool:
         selected_piece = self.squares[first_pos].image
         if first_pos[1] == 1: #První pohyb pro bílou
             if second_pos[1] - first_pos[1] == 2 and second_pos[0] == first_pos[0]:
                 if self.squares[(second_pos[0], 2)].image == self.blank and self.squares[(second_pos[0], 3)].image == self.blank:
+                    if in_game:
+                        print("pawn 2 ................... white")
+                        self.en_passant_pawn = (True, second_pos, self.moves + 1)
                     return True
                 return False
         if first_pos[1] == 6: #První pohyb pro černou
             if second_pos[1] - first_pos[1] == -2 and second_pos[0] == first_pos[0]:
                 if self.squares[(second_pos[0], 5)].image == self.blank and self.squares[(second_pos[0], 4)].image == self.blank:
+                    if in_game:
+                        print("pawn 2 ................... black")
+                        self.en_passant_pawn = (True, second_pos, self.moves + 1)
                     return True
                 return False
         if selected_piece in self.pieces_white.values():
@@ -642,6 +658,15 @@ class Board(tk.Frame):
                     return True
                 if abs(second_pos[0] - first_pos[0]) == 1:
                     if self.squares[second_pos].image == self.blank:
+                        if self.en_passant_pawn[0]:
+                            if self.moves == self.en_passant_pawn[2]:
+                                print("enpassant.............................................w")
+                                if (self.en_passant_pawn[1][1] + 1 == second_pos[1]):
+                                    if self.en_passant_pawn[1][0] == second_pos[0]:
+                                        self.en_passant_made = True
+                                        if in_game:
+                                            self.set_image(self.en_passant_pawn[1], self.blank)
+                                        return True
                         return False
                     return True
         if selected_piece in self.pieces_black.values():
@@ -652,6 +677,15 @@ class Board(tk.Frame):
                     return True
                 if abs(second_pos[0] - first_pos[0]) == 1:
                     if self.squares[second_pos].image == self.blank:
+                        if self.en_passant_pawn[0]:
+                            if self.moves == self.en_passant_pawn[2]:
+                                print("enpassant.............................................b")
+                                if (self.en_passant_pawn[1][1] - 1 == second_pos[1]):
+                                    if self.en_passant_pawn[1][0] == second_pos[0]:
+                                        self.en_passant_made = True
+                                        if in_game:
+                                            self.set_image(self.en_passant_pawn[1], self.blank)
+                                        return True
                         return False
                     return True
 
@@ -706,7 +740,7 @@ class Board(tk.Frame):
             return self.move_knight(first_pos, second_pos)
         elif (selected_piece == self.pieces_white["p"] or selected_piece == self.pieces_black["p"]):
             #print("Pawn")
-            return self.move_pawn(first_pos, second_pos)
+            return self.move_pawn(first_pos, second_pos, in_game)
         elif (selected_piece == self.pieces_white["q"] or selected_piece == self.pieces_black["q"]):
             #print("Queen")
             return (self.move_rook(first_pos, second_pos) or self.move_bishop(first_pos, second_pos))
