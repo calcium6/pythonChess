@@ -78,7 +78,7 @@ class Board(tk.Frame):
     def popup_current_fen(self):
         show_window = tk.Toplevel(self.root)
         show_window.iconbitmap('appIcon.ico')
-        ent = tk.Entry(show_window, font=('Helvetica 12'), width=55, state='readonly', justify='center')
+        ent = tk.Entry(show_window, font=('Helvetica 12'), width=76, state='readonly', justify='center')
         var = tk.StringVar()
         var.set(self.get_fen_string())
         ent.config(textvariable=var)
@@ -102,12 +102,11 @@ class Board(tk.Frame):
             for col in range(8):
                 pos = (col, 7-row)
                 if (col+row)%2 == 0:
-                    square = tk.Button(self, bg="#eeeed2", activebackground="#baca44", borderwidth=0, text = str(col) + str(7-row), command = lambda arg = pos: self.select(arg))
+                    square = tk.Button(self, bg="#eeeed2", activebackground="#baca44", borderwidth=0, command = lambda arg = pos: self.select(arg))
                 else:
-                    square = tk.Button(self, bg="#769656", activebackground="#baca44", borderwidth=0, text = str(col) + str(7-row), command = lambda arg = pos: self.select(arg))
+                    square = tk.Button(self, bg="#769656", activebackground="#baca44", borderwidth=0, command = lambda arg = pos: self.select(arg))
                 square.grid(row=row, column=col)
                 self.squares.setdefault(pos, square)
-                #self.squares[pos].config(command = lambda arg = pos: self.select(arg))
 
     def load_pieces(self):
         path = os.path.join(os.path.dirname(__file__), 'whitePieces')
@@ -826,25 +825,21 @@ class Board(tk.Frame):
             return False
         elif ((not color) and destination in self.pieces_black.values()):
             return False
-        if (selected_piece == self.pieces_white["b"] or selected_piece == self.pieces_black["b"]):
-            #print("Bishop")
-            return self.move_bishop(first_pos, second_pos)
-        elif (selected_piece == self.pieces_white["k"] or selected_piece == self.pieces_black["k"]):
-            print("King")
-            return self.move_king(not color, first_pos, second_pos, in_game)
-        elif (selected_piece == self.pieces_white["n"] or selected_piece == self.pieces_black["n"]):
-            #print("Knight")
-            return self.move_knight(first_pos, second_pos)
-        elif (selected_piece == self.pieces_white["p"] or selected_piece == self.pieces_black["p"]):
-            #print("Pawn")
-            return self.move_pawn(first_pos, second_pos, in_game)
-        elif (selected_piece == self.pieces_white["q"] or selected_piece == self.pieces_black["q"]):
-            #print("Queen")
-            return (self.move_rook(first_pos, second_pos) or self.move_bishop(first_pos, second_pos))
-        elif (selected_piece == self.pieces_white["r"] or selected_piece == self.pieces_black["r"]):
-            #print("Rook")
-            return self.move_rook(first_pos, second_pos)
-        return False
+        match self.piece_to_str[selected_piece].lower():
+            case "b":
+                return self.move_bishop(first_pos, second_pos)
+            case "k":
+                return self.move_king(not color, first_pos, second_pos, in_game)
+            case "n":
+                return self.move_knight(first_pos, second_pos)
+            case "p":
+                return self.move_pawn(first_pos, second_pos, in_game)
+            case "q":
+                return (self.move_rook(first_pos, second_pos) or self.move_bishop(first_pos, second_pos))
+            case "r":
+                return self.move_rook(first_pos, second_pos)
+            case _:
+                return False
         
     def base_color(self, pos: tuple[int, int]):
         if ((pos[0] + pos[1]) % 2 == 1):
