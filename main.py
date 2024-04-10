@@ -10,8 +10,7 @@ class Board(tk.Frame):
         self.root.configure(background="#302e2b")
         self.create_menu()
         self.root.geometry('720x720+600+100')
-        self.root.minsize(720, 720)
-        self.root.maxsize(720, 720)
+        self.root.resizable(False, False)
         self.root.title("Chess")
         self.root.iconbitmap('appIcon.ico')
 
@@ -65,6 +64,7 @@ class Board(tk.Frame):
     def load_menu(self):
         self.load_window = tk.Toplevel(self.root)
         self.load_window.geometry("500x200+710+380")
+        self.load_window.resizable(False, False)
         self.load_window.title("Nahrání pozice")
         self.load_window.iconbitmap('appIcon.ico')
 
@@ -74,18 +74,19 @@ class Board(tk.Frame):
         load_entry.pack()
         
         self.load_button = tk.Button(self.load_window,text= "Nahrát", font=('Helvetica 12'), command= lambda:self.load_game_from_fen(load_entry))
-        self.cancel_button =tk.Button(self.load_window, text="Zrušit", font=('Helvetica 12'), command=lambda:self.load_window.destroy())
+        self.cancel_button =tk.Button(self.load_window, text="Zrušit", font=('Helvetica 12'), command= lambda:self.load_window.destroy())
         self.load_button.pack(pady=10,side=tk.TOP)
         self.cancel_button.pack(pady=10, side=tk.TOP)
 
     def popup_current_fen(self):
         show_window = tk.Toplevel(self.root)
         show_window.iconbitmap('appIcon.ico')
+        show_window.resizable(False, False)
         ent = tk.Entry(show_window, font=('Helvetica 12'), width=76, state='readonly', justify='center')
         var = tk.StringVar()
         var.set(self.get_fen_string())
         ent.config(textvariable=var)
-        but = tk.Button(show_window, font=('Helvetica 12'), text="Zavřít", command=lambda: show_window.destroy())
+        but = tk.Button(show_window, font=('Helvetica 12'), text="Konec", command=lambda: show_window.destroy())
         ent.pack(padx=15, pady=15, side=tk.TOP)
         but.pack(padx=15, pady=10, side=tk.TOP)
 
@@ -200,7 +201,6 @@ class Board(tk.Frame):
         return
     
     def record_pieces(self):
-        moves = []
         for x in range(8):
             for y in range(8):
                 if self.squares[(x,y)].image != self.blank:
@@ -208,7 +208,6 @@ class Board(tk.Frame):
                         self.positions_white.append((x,y))
                     else:
                         self.positions_black.append((x,y))
-        return moves
 
     def start(self, position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", on_turn = "w", castling = "KQkq", en_passant = "-", halfmove = "0", fullmove = "0") -> None:
         try:
@@ -233,10 +232,6 @@ class Board(tk.Frame):
         return
 
     def select(self, pos: tuple[int,int]) -> None:
-        print(self.positions_black)
-        print(self.positions_white)
-        print(self.white_king_pos)
-        print(self.black_king_pos)
         if self.lock_game:
             return
         if self.button_clicks % 2 == 0:
@@ -350,16 +345,17 @@ class Board(tk.Frame):
     def end_game_menu(self, label_text: str):
         self.lock_game = True
         self.end_window = tk.Toplevel(self.root)
-        self.end_window.geometry("500x200+710+380")
+        self.end_window.geometry("500x150+710+380")
+        self.end_window.resizable(False, False)
         self.end_window.title("Konec hry")
         self.end_window.iconbitmap('appIcon.ico')
 
         end_game_message = tk.Label(self.end_window, text=label_text, font=('Helvetica 12 bold'))
-        end_game_message.pack(pady=20)
+        end_game_message.pack(pady=10)
         self.restart_button = tk.Button(self.end_window,text= "Hrát znovu", font=('Helvetica 12'), command= lambda:self.restart_game())
-        self.cancel_button =tk.Button(self.end_window, text="Konec", font=('Helvetica 12'), command=lambda:self.end_window.destroy())
+        self.cancel_button =tk.Button(self.end_window, text="Konec", font=('Helvetica 12'), command=lambda:self.root.destroy())
         self.restart_button.pack(pady=10,side=tk.TOP)
-        self.cancel_button.pack(pady=10, side=tk.TOP)
+        self.cancel_button.pack(pady=5, side=tk.TOP)
     
     def fen_board_placement(self) -> list[str]:
         piece_placement = ""
@@ -562,7 +558,6 @@ class Board(tk.Frame):
             if not stalemate:
                 return
         self.draw_by_stalemate()
-
     
     def check_current_turn(self, pos: tuple[int, int], color: bool, first_image: tk.PhotoImage, second_image: tk.PhotoImage) -> bool:
         if color:
