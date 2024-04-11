@@ -229,11 +229,8 @@ class Board(tk.Frame):
             self.record_pieces()
         except:
             messagebox.showerror("Chyba", "Nesprávný formát FEN")
-            self.error_popup()
+            self.start()
         return
-    
-    def error_popup(self):
-        pass #TODO
 
     def dokumentace_cervena(self, pos: tuple[int,int]) -> None:
         if ((pos[0] + pos[1]) % 2 == 1):
