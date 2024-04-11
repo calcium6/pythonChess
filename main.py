@@ -1,4 +1,4 @@
-import os
+import os, sys
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
@@ -11,8 +11,8 @@ class Board(tk.Frame):
         self.create_menu()
         self.root.geometry('720x720+600+100')
         self.root.resizable(False, False)
-        self.root.title("Chess")
-        self.root.iconbitmap('appIcon.ico')
+        self.root.title("Šachy")
+        self.root.iconbitmap(resource('appIcon.ico'))
 
         tk.Frame.__init__(self, self.root)
         self.pack(padx = 30, pady = 30)
@@ -66,7 +66,7 @@ class Board(tk.Frame):
         self.load_window.geometry("500x200+710+380")
         self.load_window.resizable(False, False)
         self.load_window.title("Nahrání pozice")
-        self.load_window.iconbitmap('appIcon.ico')
+        self.load_window.iconbitmap(resource('appIcon.ico'))
 
         label = tk.Label(self.load_window, text="Zadej řetězec notace FEN:", font=('Helvetica 12'))
         label.pack(pady=20)
@@ -74,31 +74,39 @@ class Board(tk.Frame):
         load_entry.pack()
         
         self.load_button = tk.Button(self.load_window,text= "Nahrát", font=('Helvetica 12'), command= lambda:self.load_game_from_fen(load_entry))
-        self.cancel_button =tk.Button(self.load_window, text="Zrušit", font=('Helvetica 12'), command= lambda:self.load_window.destroy())
+        self.cancel_button =tk.Button(self.load_window, text="Zrušit", font=('Helvetica 12'), command= self.load_window.destroy)
         self.load_button.pack(pady=10,side=tk.TOP)
         self.cancel_button.pack(pady=10, side=tk.TOP)
 
     def popup_current_fen(self):
         show_window = tk.Toplevel(self.root)
-        show_window.iconbitmap('appIcon.ico')
+        show_window.iconbitmap(resource('appIcon.ico'))
         show_window.resizable(False, False)
         ent = tk.Entry(show_window, font=('Helvetica 12'), width=76, state='readonly', justify='center')
         var = tk.StringVar()
         var.set(self.get_fen_string())
         ent.config(textvariable=var)
-        but = tk.Button(show_window, font=('Helvetica 12'), text="Konec", command=lambda: show_window.destroy())
+        but = tk.Button(show_window, font=('Helvetica 12'), text="Konec", command=show_window.destroy)
         ent.pack(padx=15, pady=15, side=tk.TOP)
         but.pack(padx=15, pady=10, side=tk.TOP)
+
+    def about_menu(self):
+        about_window = tk.Toplevel(self.root)
+        about_window.iconbitmap(resource('appIcon.ico'))
+        about_window.resizable(False, False)
+        label = tk.Label(about_window, text="Šachy 2024 Edice\n© Jiří Vaňůra léta páně dva tisíce dvacet čtyři", font=('Helvetica 12'), justify="center")
+        label.pack(padx=200, pady=200)
 
     def create_menu(self):
         self.menubar = tk.Menu(self.root)
         self.root.config(menu=self.menubar)
         
         self.options_menu = tk.Menu(self.menubar, tearoff=False)
-        self.options_menu.add_command(label="Restart hry", command=lambda: self.start())
-        self.options_menu.add_command(label="Načíst pozici", command=lambda: self.load_menu()) #TODO
-        self.options_menu.add_command(label="Vypsat pozici", command=lambda: self.popup_current_fen())
-        self.options_menu.add_command(label='Zavřít', command=self.root.destroy)
+        self.options_menu.add_command(label="Restart hry", command=self.start)
+        self.options_menu.add_command(label="Načíst pozici", command=self.load_menu)
+        self.options_menu.add_command(label="Vypsat pozici", command=self.popup_current_fen)
+        #self.options_menu.add_command(label="O programu", command=self.about_menu)
+        self.options_menu.add_command(label='Konec', command=self.root.destroy)
         self.menubar.add_cascade(label="Možnosti", menu=self.options_menu)
 
     def set_board(self):
@@ -113,7 +121,8 @@ class Board(tk.Frame):
                 self.squares.setdefault(pos, square)
 
     def load_pieces(self):
-        path = os.path.join(os.path.dirname(__file__), 'whitePieces')
+        #path = os.path.join(os.path.dirname(__file__), 'whitePieces')
+        path = resource('whitePieces')
         images = os.listdir(path)
         for imgPath in images:
             piece = Image.open(path + '\\' + imgPath)
@@ -124,7 +133,8 @@ class Board(tk.Frame):
                 self.pieces_white.setdefault(pieceName, piece)
                 self.piece_to_str.setdefault(piece, pieceName.capitalize())
         
-        path = os.path.join(os.path.dirname(__file__), 'blackPieces')
+        #path = os.path.join(os.path.dirname(__file__), 'blackPieces')
+        path = resource('blackPieces')
         images = os.listdir(path)
         for imgPath in images:
             piece = Image.open(path + '\\' + imgPath)
@@ -137,7 +147,8 @@ class Board(tk.Frame):
             else:
                 self.blank = piece
 
-        path = os.path.join(os.path.dirname(__file__), 'movePath')
+        #path = os.path.join(os.path.dirname(__file__), 'movePath')
+        path = resource('movePath')
         images = os.listdir(path)
         for imgPath in images:
             image_dot = Image.open(path + '\\' + imgPath)
@@ -348,7 +359,7 @@ class Board(tk.Frame):
         self.end_window.geometry("500x150+710+380")
         self.end_window.resizable(False, False)
         self.end_window.title("Konec hry")
-        self.end_window.iconbitmap('appIcon.ico')
+        self.end_window.iconbitmap(resource('appIcon.ico'))
 
         end_game_message = tk.Label(self.end_window, text=label_text, font=('Helvetica 12 bold'))
         end_game_message.pack(pady=10)
@@ -1060,6 +1071,12 @@ class Board(tk.Frame):
         p, pos_p = self.check_pawn(pos, color)
         print("Check: " + str(b_q) + ", " + str(r_q) + ", " + str(n) + ", " + str(p))
         return (b_q or r_q or n or p), [pos_bq, pos_rq, pos_n, pos_p]
+    
+def resource(relative_path):
+    relative_path = "assets/" + relative_path.replace("/", os.sep)
+    if getattr(sys, 'frozen', False):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath('.'), relative_path)
 
 board = Board()
 #board.start("1R6/k1nK4/1p6/1P6/8/8/8/8", "w")

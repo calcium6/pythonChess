@@ -1,0 +1,21 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build",
+            "type": "shell",
+            "promptOnClose": true,
+            "command": "pyinstaller build.spec",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "revealProblems": "onProblem",
+                "showReuseMessage": false,
+                "panel": "dedicated"
+            },
+        }
+    ]
+}
