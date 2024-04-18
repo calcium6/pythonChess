@@ -430,7 +430,7 @@ class Board(tk.Frame):
             if self.squares[(x, y)].image != self.blank:
                 return False
         for x in range(min(new_king_pos[0], new_rook_pos[0]), max(new_king_pos[0], new_rook_pos[0]) + 1):
-            check, _ = self.check_piece_threats((x,y), color)
+            check, _ = self.check_piece_threats((x,y), color, False)
             if check:
                 return False
         self.set_image(first_pos, self.blank)
@@ -576,7 +576,7 @@ class Board(tk.Frame):
             king = self.black_king_pos
             king_opponent = self.white_king_pos
             pawn = self.pieces_black["p"]
-        check, _ = self.check_piece_threats(king, color)
+        check, _ = self.check_piece_threats(king, color, False)
         if check:
             self.piece_taken = False
             self.second_button.image = second_image
@@ -604,13 +604,18 @@ class Board(tk.Frame):
         if self.squares[self.second_pos].image == pawn:
             if self.second_pos[1] == 0 or self.second_pos[1] == 7:
                 self.promote_pawn(pos, color)
-        opponent_check, check_pos = self.check_piece_threats(king_opponent, not color)
+        opponent_check, check_pos = self.check_piece_threats(king_opponent, not color, False)
         if opponent_check:
             if not self.try_move_king(not color):
                 for p in check_pos:
+                    print("check pos " + str(p) + ".........................")
                     if p is None:
                         continue
-                    if self.take_threat_piece(p, not color) or self.block_threat_piece(p, not color):
+                    if self.take_threat_piece(p, not color, False, True):
+                        print("muze brat.............................")
+                        return
+                    if self.block_threat_piece(p, not color):
+                        print("muze blokovat..................")
                         return
                 self.end_game(not color)
         else:
@@ -632,9 +637,15 @@ class Board(tk.Frame):
                 self.squares[first_pos].image = self.blank
                 self.squares[second_pos].image = first_piece
                 if self.piece_to_str[first_piece] not in "kK":
-                    threatened, _ = self.check_piece_threats(threat_pos, color)
+                    threatened, _ = self.check_piece_threats(threat_pos, color, False)
+                    print(threat_pos)
+                    print(second_pos)
+                    print(color)
+                    print("kk")
                 else:
-                    threatened, _ = self.check_piece_threats(second_pos, color)
+                    threatened, _ = self.check_piece_threats(second_pos, color, False)
+                    print("sec")
+                print(threatened)
                 self.squares[first_pos].image = first_piece
                 self.squares[second_pos].image = second_piece
                 if threatened:
@@ -647,12 +658,12 @@ class Board(tk.Frame):
         if king[0] == pos[0]:
             min_y, max_y = min(king[1], pos[1]), max(king[1], pos[1])
             for i in range(min_y+1, max_y):
-                if self.take_threat_piece((pos[0], i), color):
+                if self.take_threat_piece((pos[0], i), color, True, True):
                     return True
         if king[1] == pos[1]:
             min_x, max_x = min(king[0], pos[0]), max(king[0], pos[0])
             for i in range(min_x, max_x):
-                if self.take_threat_piece((i, pos[1]), color):
+                if self.take_threat_piece((i, pos[1]), color, True, True):
                     return True
         return False
 
@@ -664,23 +675,27 @@ class Board(tk.Frame):
             if king[1] > pos[1]: #y ↑
                 for x in range(pos[0] + 1, king[0]):
                     y += 1
-                    if self.take_threat_piece((x, y), color):
+                    if self.take_threat_piece((x, y), color, True, True):
                         return True
             if king[1] < pos[1]: #y ↓
                 for x in range(pos[0] + 1, king[0]):
                     y -= 1
-                    if self.take_threat_piece((x, y), color):
+                    if self.take_threat_piece((x, y), color, True, True):
                         return True
         if king[0] < pos[0]: #x <-
             if king[1] > pos[1]: #y ↑
                 for x in range(pos[0] - 1, king[0], -1):
                     y += 1
-                    if self.take_threat_piece((x, y), color):
+                    print("--..--")
+                    print((x,y))
+                    print(color)
+                    print("....")
+                    if self.take_threat_piece((x, y), color, True, True):
                         return True
             if king[0] < pos[0]: #y ↓
                 for x in range(pos[0] - 1, king[0], -1):
                     y -= 1
-                    if self.take_threat_piece((x, y), color):
+                    if self.take_threat_piece((x, y), color, True, True):
                         return True
         return False
     
@@ -692,22 +707,27 @@ class Board(tk.Frame):
             king = self.black_king_pos
             pieces = self.pieces_white
         piece = self.squares[pos].image
-        if piece == pieces["p"] or pieces["n"]:
+        if piece == pieces["p"] or piece == pieces["n"]:
+            print("fals")
             return False
-        if piece == pieces["r"] or pieces["q"]:
+        if piece == pieces["r"] or piece == pieces["q"]:
             if self.block_rook_path(king, pos, color):
                 return True
-        if piece == pieces["r"] or pieces["q"]:
+        if piece == pieces["b"] or piece == pieces["q"]:
+            print("block diagonal")
             if self.block_bishop_path(king, pos, color):
                 return True
         return False
         
-    def take_threat_piece(self, pos: tuple[int, int], color: bool) -> bool: #todo rename
-        threatened, threat_pos = self.check_piece_threats(pos, not color)
+    def take_threat_piece(self, pos: tuple[int, int], color: bool, block: bool, threat_king: bool) -> bool: #todo rename
+        if block:
+            threatened, threat_pos = self.check_piece_threats(pos, not color, block)
+        else:
+            threatened, threat_pos = self.check_piece_threats(pos, not color, block)
         if threatened:
             for p in threat_pos:
                 if p != None:
-                    if self.try_for_check(p, pos, color, False):
+                    if self.try_for_check(p, pos, color, threat_king):
                         return True
         return False
     
@@ -836,6 +856,7 @@ class Board(tk.Frame):
                                         return True
                         return False
                     return True
+        return False
 
     def move_rook(self, first_pos: tuple[int, int], second_pos: tuple[int, int]) -> bool:
         if first_pos[1] == second_pos[1]:
@@ -1061,11 +1082,30 @@ class Board(tk.Frame):
             pass
         return False, None
     
-    def check_piece_threats(self, pos: tuple[int, int], color: bool) -> tuple[bool, list]: #king_color: True - white, False - black
+    def try_move_pawn(self, pos, color):
+        if color:
+            pos1 = (pos[0], pos[1] + 1)
+            pos2 = (pos[0], pos[1] + 2)
+        else:
+            pos1 = (pos[0], pos[1] - 1)
+            pos2 = (pos[0], pos[1] - 2)
+        try:
+            if self.move_pawn(pos1, pos, False):
+                return True, pos1
+            if self.move_pawn(pos2, pos, False):
+                return True, pos2
+        except:
+            pass
+        return False, None
+    
+    def check_piece_threats(self, pos: tuple[int, int], color: bool, block: bool) -> tuple[bool, list]: #king_color: True - white, False - black
         b_q, pos_bq = self.check_bishop_queen(pos, color)
         r_q, pos_rq = self.check_rook_queen(pos, color)
+        if block:
+            p, pos_p = self.try_move_pawn(pos, color)
+        else:
+            p, pos_p = self.check_pawn(pos, color)
         n, pos_n = self.check_knight(pos, color)
-        p, pos_p = self.check_pawn(pos, color)
         print("Check: " + str(b_q) + ", " + str(r_q) + ", " + str(n) + ", " + str(p))
         return (b_q or r_q or n or p), [pos_bq, pos_rq, pos_n, pos_p]
     
