@@ -222,6 +222,7 @@ class Board(tk.Frame):
 
     def start(self, position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", on_turn = "w", castling = "KQkq", en_passant = "-", halfmove = "0", fullmove = "0") -> None:
         try:
+            self.lock_game = False
             self.place_pieces(position)
             self.set_turn(on_turn, halfmove, fullmove)
             self.set_castling(castling)
